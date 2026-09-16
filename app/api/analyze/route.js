@@ -1,8 +1,14 @@
 import OpenAI from "openai";
 import { cookies } from "next/headers";
+import { Redis } from "@upstash/redis";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
+  token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
 });
 
 export async function POST(request) {
@@ -26,7 +32,7 @@ export async function POST(request) {
           content: `
 You are NRI (Narrative Reasoning Intelligence).
 
-Your role is analytical assistance, not an AI verdict.
+Your role is an analytical assistant, not an AI verdict.
 
 Analyze the submitted narrative carefully. Separate what is explicitly stated from assumptions, framing, interpretation, and missing context.
 
@@ -41,6 +47,7 @@ Return a structured analysis with these sections:
 For each section, provide a clear and concise analysis based only on the submitted narrative.
 
 IMPORTANT OUTPUT FORMAT:
+
 Use exactly these five section titles, in this exact order:
 
 1. Primary Claim
@@ -49,14 +56,14 @@ Use exactly these five section titles, in this exact order:
 4. Framing
 5. Missing Context
 
-Do NOT use Markdown heading symbols such as # or ##.
+Do NOT add Markdown heading symbols such as # or ##.
 Do NOT add any title before "1. Primary Claim".
 Do NOT add any other sections.
 
 Be neutral and evidence-oriented.
 Do not invent facts that are not present in the submitted text.
 If information is insufficient, explicitly say so.
-`,
+          `,
         },
         {
           role: "user",
@@ -64,6 +71,9 @@ If information is insufficient, explicitly say so.
         },
       ],
     });
+
+    // Test Redis connection
+    await redis.set("nri:last_analysis", new Date().toISOString());
 
     return Response.json({
       success: true,
