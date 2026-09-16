@@ -4,7 +4,30 @@ import { useState } from "react";
 
 export default function Home() {
   const [text, setText] = useState("");
+const [result, setResult] = useState(null);
+const [loading, setLoading] = useState(false);
 
+async function handleAnalyze() {
+  setLoading(true);
+  setResult(null);
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    const data = await response.json();
+    setResult(data);
+  } catch (error) {
+    setResult({ error: "Connection failed." });
+  } finally {
+    setLoading(false);
+  }
+}
   return (
     <main style={styles.page}>
       <section style={styles.container}>
@@ -42,17 +65,35 @@ export default function Home() {
             </span>
 
             <button
-              disabled={!text.trim()}
-              style={{
-                ...styles.button,
-                opacity: text.trim() ? 1 : 0.45,
-              }}
-            >
-              Analyze →
-            </button>
+  onClick={handleAnalyze}
+  disabled={!text.trim() || loading}
+  style={{
+    ...styles.button,
+    opacity: text.trim() && !loading ? 1 : 0.45,
+  }}
+>
+  {loading ? "Analyzing..." : "Analyze →"}
+</button>
           </div>
         </div>
+{result && (
+  <div style={styles.card}>
+    <div style={styles.cardHeader}>
+      <span>API Response</span>
+    </div>
 
+    <pre
+      style={{
+        whiteSpace: "pre-wrap",
+        fontSize: "13px",
+        lineHeight: "1.5",
+        opacity: 0.75,
+      }}
+    >
+      {JSON.stringify(result, null, 2)}
+    </pre>
+  </div>
+)}
         <p style={styles.note}>
           NRI provides analytical assistance, not an AI verdict.
         </p>
