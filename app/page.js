@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [text, setText] = useState("");
 const [result, setResult] = useState(null);
 const [loading, setLoading] = useState(false);
 const [freeCount, setFreeCount] = useState(0);
+useEffect(() => {
+  const savedCount = localStorage.getItem("nri_free_count");
+  if (savedCount) {
+    setFreeCount(Number(savedCount));
+  }
+}, []);
 
 async function handleAnalyze() {
   if (freeCount >= 3) {
@@ -32,9 +38,12 @@ async function handleAnalyze() {
     setResult(data);
 
     if (data.success) {
-    setFreeCount((count) => count + 1);
-    }
-
+  setFreeCount((count) => {
+    const newCount = count + 1;
+    localStorage.setItem("nri_free_count", String(newCount));
+    return newCount;
+  });
+}
   } catch (error) {
     setResult({ error: "Connection failed." });
   } finally {
