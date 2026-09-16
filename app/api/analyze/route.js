@@ -30,17 +30,15 @@ Analyze the submitted narrative carefully. Separate what is explicitly stated fr
 
 Return a structured analysis with these sections:
 
-1. Narrative Overview
-2. Primary Claim
-3. Evidence
-4. Assumptions
-5. Framing
-6. Emotional Triggers
-7. Missing Context
-8. Reasoning Risks
-9. Alternative Interpretations
-10. Verification Questions
-11. Uncertainty
+1. Primary Claim
+2. Evidence
+3. Assumptions
+4. Framing
+5. Missing Context
+
+For each section, provide a clear and concise analysis based only on the submitted narrative.
+
+Do not add any other sections.
 
 Be neutral and evidence-oriented.
 Do not invent facts that are not present in the submitted text.
