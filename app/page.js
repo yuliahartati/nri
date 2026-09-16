@@ -30,7 +30,7 @@ function parseAnalysis(text) {
   return sections;
 }
 
-function downloadMarkdown(analysisText) {
+function downloadMarkdown(analysisText, originalText) {
   const stamp = new Date()
     .toISOString()
     .replace(/[:.]/g, "-")
@@ -39,6 +39,12 @@ function downloadMarkdown(analysisText) {
   const content = `# NRI Analysis Report
 
 Generated: ${new Date().toLocaleString()}
+
+## Original Text Analyzed
+
+${originalText}
+
+## Analysis
 
 ${analysisText}
 `;
@@ -196,7 +202,7 @@ export default function Home() {
                 <div style={styles.cardHeader}>
                   <span>NRI Analysis</span>
                   <button
-                    onClick={() => downloadMarkdown(result.analysis)}
+                    onClick={() => downloadMarkdown(result.analysis, text)}
                     style={styles.downloadBtn}
                   >
                     ⬇ .md
