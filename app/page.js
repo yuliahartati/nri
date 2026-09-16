@@ -73,7 +73,9 @@ async function handleAnalyze() {
           </div>
 
           <textarea
-            value={text}
+  value={text}
+  onChange={(e) => setText(e.target.value)}
+  disabled={freeCount >= 3}
             onChange={(e) => setText(e.target.value)}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
