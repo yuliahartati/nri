@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { cookies } from "next/headers";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -6,6 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
+    const cookieStore = await cookies();
     const body = await request.json();
     const text = body.text;
 
