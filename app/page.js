@@ -4,56 +4,81 @@ import { useState, useEffect } from "react";
 
 export default function Home() {
   const [text, setText] = useState("");
-const [result, setResult] = useState(null);
-const [loading, setLoading] = useState(false);
-const [freeCount, setFreeCount] = useState(0);
-useEffect(() => {
-  const savedCount = localStorage.getItem("nri_free_count");
-  if (savedCount) {
-    setFreeCount(Number(savedCount));
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [freeCount, setFreeCount] = useState(0);
+
+  useEffect(() => {
+    async function loadQuota() {
+      try {
+        const response = await fetch("/api/analyze", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setFreeCount(data.used);
+        }
+      } catch (error) {
+        console.error("Quota check failed:", error);
+      }
+    }
+
+    loadQuota();
+  }, []);
+
+  async function handleAnalyze() {
+    if (freeCount >= 3) {
+      setResult({
+        error: "Free analysis limit reached.",
+        limit: 3,
+        remaining: 0,
+      });
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      const data = await response.json();
+
+      setResult(data);
+
+      if (data.success && data.usage) {
+        setFreeCount(data.usage.used);
+      }
+
+      if (response.status === 429) {
+        setFreeCount(3);
+      }
+    } catch (error) {
+      setResult({
+        error: "Connection failed.",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
-}, []);
 
-async function handleAnalyze() {
-  if (freeCount >= 3) {
-    setResult({
-      error: "Free analyses used. Upgrade to Pro for more analyses."
-    });
-    return;
-  }
-
-  setLoading(true);
-  setResult(null);
-
-  try {
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ text }),
-    });
-
-    const data = await response.json();
-    setResult(data);
-
-    if (data.success) {
-  const newCount = freeCount + 1;
-  setFreeCount(newCount);
-  localStorage.setItem("nri_free_count", String(newCount));
-}
-  } catch (error) {
-    setResult({ error: "Connection failed." });
-  } finally {
-    setLoading(false);
-  }
-}
   return (
     <main style={styles.page}>
       <section style={styles.container}>
         <div style={styles.logo}>NRI</div>
 
-        <p style={styles.eyebrow}>NARRATIVE REASONING INTELLIGENCE</p>
+        <p style={styles.eyebrow}>
+          NARRATIVE REASONING INTELLIGENCE
+        </p>
 
         <h1 style={styles.title}>
           Understand the narrative.
@@ -69,14 +94,16 @@ async function handleAnalyze() {
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <span>Analyze a narrative</span>
-            <span style={styles.free}>{Math.max(0, 3 - freeCount)} FREE</span>
+
+            <span style={styles.free}>
+              {Math.max(0, 3 - freeCount)} FREE
+            </span>
           </div>
 
           <textarea
-  value={text}
-  onChange={(e) => setText(e.target.value)}
-  disabled={freeCount >= 3}
+            value={text}
             onChange={(e) => setText(e.target.value)}
+            disabled={freeCount >= 3}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
@@ -87,54 +114,34 @@ async function handleAnalyze() {
             </span>
 
             <button
-  onClick={handleAnalyze}
-  disabled={!text.trim() || loading || freeCount >= 3}
-  style={{
-    ...styles.button,
-    opacity: text.trim() && !loading ? 1 : 0.45,
-  }}
->
-  {loading ? "Analyzing..." : "Analyze →"}
-</button>
+              onClick={handleAnalyze}
+              disabled={
+                !text.trim() ||
+                loading ||
+                freeCount >= 3
+              }
+              style={{
+                ...styles.button,
+                opacity:
+                  text.trim() &&
+                  !loading &&
+                  freeCount < 3
+                    ? 1
+                    : 0.45,
+              }}
+            >
+              {loading ? "Analyzing..." : "Analyze →"}
+            </button>
           </div>
         </div>
-{result && (
-  <div style={styles.card}>
-    {result.analysis ? (
-      <>
-        <div style={styles.cardHeader}>
-          <span>NRI Analysis</span>
-        </div>
 
-        {result.analysis
-          .split(/(?=##\s+\d+\.)/)
-          .filter(Boolean)
-          .map((section, index) => {
-            const lines = section.trim().split("\n");
-            const title = lines
-              .shift()
-              .replace(/^##\s*\d+\.\s*/, "")
-              .trim();
-
-            const content = lines.join("\n").trim();
-
-            return (
-              <details
-                key={index}
-                style={{
-                  borderTop: "1px solid #292d34",
-                  padding: "14px 0",
-                }}
-              >
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "14px",
-                  }}
-                >
-                  {title}
-                </summary>
+        {result && (
+          <div style={styles.card}>
+            {result.analysis ? (
+              <>
+                <div style={styles.cardHeader}>
+                  <span>NRI Analysis</span>
+                </div>
 
                 <div
                   style={{
@@ -142,29 +149,26 @@ async function handleAnalyze() {
                     fontSize: "13px",
                     lineHeight: "1.6",
                     opacity: 0.78,
-                    marginTop: "12px",
                   }}
                 >
-                  {content}
+                  {result.analysis}
                 </div>
-              </details>
-            );
-          })}
-      </>
-    ) : (
-      <pre
-        style={{
-          whiteSpace: "pre-wrap",
-          fontSize: "13px",
-          lineHeight: "1.5",
-          opacity: 0.75,
-        }}
-      >
-        {JSON.stringify(result, null, 2)}
-      </pre>
-    )}
-  </div>
-)}
+              </>
+            ) : (
+              <pre
+                style={{
+                  whiteSpace: "pre-wrap",
+                  fontSize: "13px",
+                  lineHeight: "1.5",
+                  opacity: 0.75,
+                }}
+              >
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            )}
+          </div>
+        )}
+
         <p style={styles.note}>
           NRI provides analytical assistance, not an AI verdict.
         </p>
