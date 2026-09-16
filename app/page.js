@@ -78,20 +78,69 @@ async function handleAnalyze() {
         </div>
 {result && (
   <div style={styles.card}>
-    <div style={styles.cardHeader}>
-      <span>API Response</span>
-    </div>
+    {result.analysis ? (
+      <>
+        <div style={styles.cardHeader}>
+          <span>NRI Analysis</span>
+        </div>
 
-    <pre
-      style={{
-        whiteSpace: "pre-wrap",
-        fontSize: "13px",
-        lineHeight: "1.5",
-        opacity: 0.75,
-      }}
-    >
-      {JSON.stringify(result, null, 2)}
-    </pre>
+        {result.analysis
+          .split(/(?=##\s+\d+\.)/)
+          .filter(Boolean)
+          .map((section, index) => {
+            const lines = section.trim().split("\n");
+            const title = lines
+              .shift()
+              .replace(/^##\s*\d+\.\s*/, "")
+              .trim();
+
+            const content = lines.join("\n").trim();
+
+            return (
+              <details
+                key={index}
+                style={{
+                  borderTop: "1px solid #292d34",
+                  padding: "14px 0",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "14px",
+                  }}
+                >
+                  {title}
+                </summary>
+
+                <div
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    fontSize: "13px",
+                    lineHeight: "1.6",
+                    opacity: 0.78,
+                    marginTop: "12px",
+                  }}
+                >
+                  {content}
+                </div>
+              </details>
+            );
+          })}
+      </>
+    ) : (
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          fontSize: "13px",
+          lineHeight: "1.5",
+          opacity: 0.75,
+        }}
+      >
+        {JSON.stringify(result, null, 2)}
+      </pre>
+    )}
   </div>
 )}
         <p style={styles.note}>
