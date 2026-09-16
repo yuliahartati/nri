@@ -38,11 +38,9 @@ async function handleAnalyze() {
     setResult(data);
 
     if (data.success) {
-  setFreeCount((count) => {
-    const newCount = count + 1;
-    localStorage.setItem("nri_free_count", String(newCount));
-    return newCount;
-  });
+  const newCount = freeCount + 1;
+  setFreeCount(newCount);
+  localStorage.setItem("nri_free_count", String(newCount));
 }
   } catch (error) {
     setResult({ error: "Connection failed." });
