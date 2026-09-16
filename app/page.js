@@ -6,8 +6,16 @@ export default function Home() {
   const [text, setText] = useState("");
 const [result, setResult] = useState(null);
 const [loading, setLoading] = useState(false);
+const [freeCount, setFreeCount] = useState(0);
 
 async function handleAnalyze() {
+  if (freeCount >= 3) {
+    setResult({
+      error: "Free analyses used. Upgrade to Pro for more analyses."
+    });
+    return;
+  }
+
   setLoading(true);
   setResult(null);
 
@@ -22,6 +30,11 @@ async function handleAnalyze() {
 
     const data = await response.json();
     setResult(data);
+
+    if (data.success) {
+    setFreeCount((count) => count + 1);
+    }
+
   } catch (error) {
     setResult({ error: "Connection failed." });
   } finally {
