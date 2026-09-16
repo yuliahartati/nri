@@ -62,7 +62,7 @@ async function handleAnalyze() {
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <span>Analyze a narrative</span>
-            <span style={styles.free}>3 FREE</span>
+            <span style={styles.free}>{Math.max(0, 3 - freeCount)} FREE</span>
           </div>
 
           <textarea
