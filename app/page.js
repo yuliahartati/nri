@@ -7,6 +7,7 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [freeCount, setFreeCount] = useState(0);
+  const [limit, setLimit] = useState(3);
 
   useEffect(() => {
     async function loadQuota() {
@@ -20,6 +21,7 @@ export default function Home() {
 
         if (data.success) {
           setFreeCount(data.used);
+          setLimit(data.limit);
         }
       } catch (error) {
         console.error("Quota check failed:", error);
@@ -30,10 +32,10 @@ export default function Home() {
   }, []);
 
   async function handleAnalyze() {
-    if (freeCount >= 3) {
+    if (freeCount >= limit) {
       setResult({
         error: "Free analysis limit reached.",
-        limit: 3,
+        limit: limit,
         remaining: 0,
       });
       return;
@@ -60,7 +62,7 @@ export default function Home() {
       }
 
       if (response.status === 429) {
-        setFreeCount(3);
+        setFreeCount(limit);
       }
     } catch (error) {
       setResult({
@@ -96,14 +98,14 @@ export default function Home() {
             <span>Analyze a narrative</span>
 
             <span style={styles.free}>
-              {Math.max(0, 3 - freeCount)} FREE
+              {Math.max(0, limit - freeCount)} FREE
             </span>
           </div>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            disabled={freeCount >= 3}
+            disabled={freeCount >= limit}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
@@ -118,14 +120,14 @@ export default function Home() {
               disabled={
                 !text.trim() ||
                 loading ||
-                freeCount >= 3
+                freeCount >= limit
               }
               style={{
                 ...styles.button,
                 opacity:
                   text.trim() &&
                   !loading &&
-                  freeCount < 3
+                  freeCount < limit
                     ? 1
                     : 0.45,
               }}
