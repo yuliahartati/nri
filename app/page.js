@@ -2,6 +2,58 @@
 
 import { useState, useEffect } from "react";
 
+const SECTION_TITLES = [
+  "Primary Claim",
+  "Evidence",
+  "Assumptions",
+  "Framing",
+  "Missing Context",
+];
+
+function parseAnalysis(text) {
+  const pattern = new RegExp(
+    `(\\d+\\.\\s*(?:${SECTION_TITLES.join("|")}))`,
+    "g"
+  );
+  const parts = text.split(pattern).filter((p) => p.trim() !== "");
+
+  const sections = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (SECTION_TITLES.some((t) => parts[i].includes(t))) {
+      sections.push({
+        title: parts[i].trim(),
+        body: (parts[i + 1] || "").trim(),
+      });
+      i++;
+    }
+  }
+  return sections;
+}
+
+function downloadMarkdown(analysisText) {
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .slice(0, 19);
+
+  const content = `# NRI Analysis Report
+
+Generated: ${new Date().toLocaleString()}
+
+${analysisText}
+`;
+
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `nri-analysis-${stamp}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function Home() {
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
@@ -143,18 +195,43 @@ export default function Home() {
               <>
                 <div style={styles.cardHeader}>
                   <span>NRI Analysis</span>
+                  <button
+                    onClick={() => downloadMarkdown(result.analysis)}
+                    style={styles.downloadBtn}
+                  >
+                    ⬇ .md
+                  </button>
                 </div>
 
-                <div
-                  style={{
-                    whiteSpace: "pre-wrap",
-                    fontSize: "13px",
-                    lineHeight: "1.6",
-                    opacity: 0.78,
-                  }}
-                >
-                  {result.analysis}
-                </div>
+                {(() => {
+                  const sections = parseAnalysis(result.analysis);
+
+                  if (sections.length === 0) {
+                    return (
+                      <div
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          fontSize: "13px",
+                          lineHeight: "1.6",
+                          opacity: 0.78,
+                        }}
+                      >
+                        {result.analysis}
+                      </div>
+                    );
+                  }
+
+                  return sections.map((section, idx) => (
+                    <details key={idx} style={styles.accordionItem}>
+                      <summary style={styles.accordionSummary}>
+                        {section.title}
+                      </summary>
+                      <div style={styles.accordionBody}>
+                        {section.body}
+                      </div>
+                    </details>
+                  ));
+                })()}
               </>
             ) : (
               <pre
@@ -286,6 +363,39 @@ const styles = {
     fontWeight: "700",
     fontSize: "14px",
     cursor: "pointer",
+  },
+
+  downloadBtn: {
+    background: "transparent",
+    border: "1px solid #292d34",
+    borderRadius: "8px",
+    padding: "6px 10px",
+    color: "#f5f5f5",
+    fontSize: "11px",
+    cursor: "pointer",
+  },
+
+  accordionItem: {
+    border: "1px solid #292d34",
+    borderRadius: "10px",
+    padding: "12px 14px",
+    marginBottom: "10px",
+    background: "#0d0f12",
+  },
+
+  accordionSummary: {
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    outline: "none",
+  },
+
+  accordionBody: {
+    whiteSpace: "pre-wrap",
+    fontSize: "13px",
+    lineHeight: "1.6",
+    opacity: 0.8,
+    marginTop: "10px",
   },
 
   note: {
