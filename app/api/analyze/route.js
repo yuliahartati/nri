@@ -21,9 +21,76 @@ function hashIP(ip) {
     .digest("hex");
 }
 
+function getIP(request) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  return "unknown";
+}
+
+async function getUsage(request) {
+  const cookieStore = await cookies();
+
+  let sessionId = cookieStore.get("nri_session")?.value;
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+
+    cookieStore.set("nri_session", sessionId, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+    });
+  }
+
+  const ipHash = hashIP(getIP(request));
+
+  const sessionKey = `nri:usage:session:${sessionId}`;
+  const ipKey = `nri:usage:ip:${ipHash}`;
+
+  const sessionUsage = Number((await redis.get(sessionKey)) || 0);
+  const ipUsage = Number((await redis.get(ipKey)) || 0);
+
+  const used = Math.max(sessionUsage, ipUsage);
+  const remaining = Math.max(0, FREE_LIMIT - used);
+
+  return {
+    sessionKey,
+    ipKey,
+    used,
+    remaining,
+  };
+}
+
+export async function GET(request) {
+  try {
+    const usage = await getUsage(request);
+
+    return Response.json({
+      success: true,
+      limit: FREE_LIMIT,
+      used: usage.used,
+      remaining: usage.remaining,
+    });
+  } catch (error) {
+    console.error("NRI quota error:", error);
+
+    return Response.json(
+      {
+        error: "Unable to check usage.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
     const body = await request.json();
     const text = body.text;
 
@@ -34,39 +101,9 @@ export async function POST(request) {
       );
     }
 
-    // Get or create anonymous session
-    let sessionId = cookieStore.get("nri_session")?.value;
+    const usage = await getUsage(request);
 
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-
-      cookieStore.set("nri_session", sessionId, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30,
-        path: "/",
-      });
-    }
-
-    // Hash IP for abuse protection
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip = forwardedFor
-      ? forwardedFor.split(",")[0].trim()
-      : "unknown";
-
-    const ipHash = hashIP(ip);
-
-    // Usage keys
-    const sessionKey = `nri:usage:session:${sessionId}`;
-    const ipKey = `nri:usage:ip:${ipHash}`;
-
-    // Current usage
-    const sessionUsage = Number((await redis.get(sessionKey)) || 0);
-    const ipUsage = Number((await redis.get(ipKey)) || 0);
-
-    // Block after 3 free analyses
-    if (sessionUsage >= FREE_LIMIT || ipUsage >= FREE_LIMIT) {
+    if (usage.remaining <= 0) {
       return Response.json(
         {
           error: "Free analysis limit reached.",
@@ -125,15 +162,13 @@ If information is insufficient, explicitly say so.
       ],
     });
 
-    // Count successful analysis
-    const newSessionUsage = sessionUsage + 1;
-    const newIpUsage = ipUsage + 1;
+    const newUsage = usage.used + 1;
 
-    await redis.set(sessionKey, newSessionUsage, {
+    await redis.set(usage.sessionKey, newUsage, {
       ex: 60 * 60 * 24 * 30,
     });
 
-    await redis.set(ipKey, newIpUsage, {
+    await redis.set(usage.ipKey, newUsage, {
       ex: 60 * 60 * 24 * 30,
     });
 
@@ -141,9 +176,9 @@ If information is insufficient, explicitly say so.
       success: true,
       analysis: response.output_text,
       usage: {
-        used: newSessionUsage,
+        used: newUsage,
         limit: FREE_LIMIT,
-        remaining: Math.max(0, FREE_LIMIT - newSessionUsage),
+        remaining: Math.max(0, FREE_LIMIT - newUsage),
       },
     });
   } catch (error) {
