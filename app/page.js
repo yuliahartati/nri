@@ -86,7 +86,7 @@ async function handleAnalyze() {
 
             <button
   onClick={handleAnalyze}
-  disabled={!text.trim() || loading}
+  disabled={!text.trim() || loading || freeCount >= 3}
   style={{
     ...styles.button,
     opacity: text.trim() && !loading ? 1 : 0.45,
