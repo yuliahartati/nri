@@ -33,7 +33,20 @@ const FIELD_LABELS = {
 function parseAnalysis(text) {
   // New JSON format
   try {
-    const parsed = JSON.parse(text);
+    let jsonText = text;
+
+    if (typeof jsonText === "string") {
+      jsonText = jsonText.trim();
+
+      // Tolerate markdown code fences some responses may wrap JSON in
+      const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (fenceMatch) {
+        jsonText = fenceMatch[1].trim();
+      }
+    }
+
+    const parsed =
+      typeof jsonText === "string" ? JSON.parse(jsonText) : jsonText;
 
     if (parsed && typeof parsed === "object") {
       return Object.entries(FIELD_LABELS)
