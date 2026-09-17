@@ -2,20 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-const SECTION_TITLES = [
-  "Narrative Overview",
-  "Primary Claim",
-  "Evidence",
-  "Assumptions",
-  "Framing",
-  "Emotional Triggers",
-  "Missing Context",
-  "Reasoning Risks",
-  "Alternative Interpretations",
-  "Verification Questions",
-  "Uncertainty",
-];
-
 const FIELD_LABELS = {
   narrative_overview: "Narrative Overview",
   primary_claim: "Primary Claim",
@@ -30,6 +16,15 @@ const FIELD_LABELS = {
   uncertainty: "Uncertainty",
 };
 
+function cleanAnalysisText(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
 function parseAnalysis(value) {
   if (!value) return null;
 
@@ -41,14 +36,9 @@ function parseAnalysis(value) {
     return null;
   }
 
-  let raw = value.trim();
+  const raw = cleanAnalysisText(value);
 
-  raw = raw
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-
+  // 1. Normal valid JSON
   try {
     const parsed = JSON.parse(raw);
 
@@ -57,6 +47,7 @@ function parseAnalysis(value) {
     }
   } catch (error) {}
 
+  // 2. JSON embedded inside extra text
   const firstBrace = raw.indexOf("{");
   const lastBrace = raw.lastIndexOf("}");
 
@@ -72,7 +63,145 @@ function parseAnalysis(value) {
     } catch (error) {}
   }
 
-  return null;
+  // 3. Recovery for a response that was cut off.
+  // This does NOT rewrite the analysis.
+  // It only recovers complete fields already present in Luna's output.
+  const recovered = {};
+
+  for (const key of Object.keys(FIELD_LABELS)) {
+    const keyPattern = new RegExp(
+      `"${key}"\\s*:`,
+      "m"
+    );
+
+    const match = keyPattern.exec(raw);
+
+    if (!match) continue;
+
+    const start = match.index + match[0].length;
+    const remainder = raw.slice(start).trimStart();
+
+    // String field
+    if (remainder.startsWith('"')) {
+      let escaped = false;
+
+      for (let i = 1; i < remainder.length; i++) {
+        const char = remainder[i];
+
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+
+        if (char === "\\") {
+          escaped = true;
+          continue;
+        }
+
+        if (char === '"') {
+          const candidate = remainder.slice(0, i + 1);
+
+          try {
+            recovered[key] = JSON.parse(candidate);
+          } catch (error) {}
+
+          break;
+        }
+      }
+
+      continue;
+    }
+
+    // Array field
+    if (remainder.startsWith("[")) {
+      const items = [];
+      let position = 1;
+
+      while (position < remainder.length) {
+        while (
+          position < remainder.length &&
+          /[\s,]/.test(remainder[position])
+        ) {
+          position++;
+        }
+
+        if (
+          position >= remainder.length ||
+          remainder[position] === "]"
+        ) {
+          break;
+        }
+
+        if (remainder[position] !== '"') {
+          break;
+        }
+
+        let escaped = false;
+        let end = -1;
+
+        for (
+          let i = position + 1;
+          i < remainder.length;
+          i++
+        ) {
+          const char = remainder[i];
+
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+
+          if (char === "\\") {
+            escaped = true;
+            continue;
+          }
+
+          if (char === '"') {
+            end = i;
+            break;
+          }
+        }
+
+        if (end === -1) break;
+
+        try {
+          items.push(
+            JSON.parse(
+              remainder.slice(position, end + 1)
+            )
+          );
+        } catch (error) {
+          break;
+        }
+
+        position = end + 1;
+
+        while (
+          position < remainder.length &&
+          /\s/.test(remainder[position])
+        ) {
+          position++;
+        }
+
+        if (remainder[position] === ",") {
+          position++;
+          continue;
+        }
+
+        break;
+      }
+
+      if (items.length > 0) {
+        recovered[key] = items;
+      }
+
+      continue;
+    }
+  }
+
+  return Object.keys(recovered).length > 0
+    ? recovered
+    : null;
 }
 
 function downloadMarkdown(analysisText, originalText) {
@@ -118,6 +247,7 @@ function renderBody(body) {
         {body.map((item, index) => (
           <div key={index} style={styles.listItem}>
             <span style={styles.bullet}>•</span>
+
             <span style={styles.listText}>
               {typeof item === "string"
                 ? item
@@ -174,10 +304,13 @@ export default function Home() {
   useEffect(() => {
     async function loadQuota() {
       try {
-        const response = await fetch("/api/analyze", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const response = await fetch(
+          "/api/analyze",
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
 
         const data = await response.json();
 
@@ -186,7 +319,10 @@ export default function Home() {
           setLimit(data.limit);
         }
       } catch (error) {
-        console.error("Quota check failed:", error);
+        console.error(
+          "Quota check failed:",
+          error
+        );
       }
     }
 
@@ -200,6 +336,7 @@ export default function Home() {
         limit: limit,
         remaining: 0,
       });
+
       return;
     }
 
@@ -207,20 +344,29 @@ export default function Home() {
     setResult(null);
 
     try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      });
+      const response = await fetch(
+        "/api/analyze",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({ text }),
+        }
+      );
 
       const data = await response.json();
 
       setResult(data);
 
-      if (data.success && data.usage) {
-        setFreeCount(data.usage.used);
+      if (
+        data.success &&
+        data.usage
+      ) {
+        setFreeCount(
+          data.usage.used
+        );
       }
 
       if (response.status === 429) {
@@ -239,7 +385,9 @@ export default function Home() {
     <main style={styles.page}>
       <section style={styles.container}>
 
-        <div style={styles.logo}>NRI</div>
+        <div style={styles.logo}>
+          NRI
+        </div>
 
         <p style={styles.eyebrow}>
           NARRATIVE REASONING INTELLIGENCE
@@ -259,16 +407,24 @@ export default function Home() {
         <div style={styles.card}>
 
           <div style={styles.cardHeader}>
-            <span>Analyze a narrative</span>
+            <span>
+              Analyze a narrative
+            </span>
 
             <span style={styles.free}>
-              {Math.max(0, limit - freeCount)} FREE
+              {Math.max(
+                0,
+                limit - freeCount
+              )}{" "}
+              FREE
             </span>
           </div>
 
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) =>
+              setText(e.target.value)
+            }
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
@@ -288,7 +444,8 @@ export default function Home() {
               style={{
                 ...styles.button,
                 opacity:
-                  text.trim() && !loading
+                  text.trim() &&
+                  !loading
                     ? 1
                     : 0.45,
               }}
@@ -307,7 +464,9 @@ export default function Home() {
             {result.analysis ? (
               <>
                 <div style={styles.cardHeader}>
-                  <span>NRI Analysis</span>
+                  <span>
+                    NRI Analysis
+                  </span>
 
                   <button
                     onClick={() =>
@@ -316,20 +475,27 @@ export default function Home() {
                         text
                       )
                     }
-                    style={styles.downloadBtn}
+                    style={
+                      styles.downloadBtn
+                    }
                   >
                     ↓ .md
                   </button>
                 </div>
 
                 {(() => {
-                  const parsed = parseAnalysis(
-                    result.analysis
-                  );
+                  const parsed =
+                    parseAnalysis(
+                      result.analysis
+                    );
 
                   if (!parsed) {
                     return (
-                      <div style={styles.fallback}>
+                      <div
+                        style={
+                          styles.fallback
+                        }
+                      >
                         {String(
                           result.analysis
                         )}
@@ -338,18 +504,22 @@ export default function Home() {
                   }
 
                   const sections =
-                    Object.entries(FIELD_LABELS)
+                    Object.entries(
+                      FIELD_LABELS
+                    )
                       .filter(
                         ([key]) =>
                           parsed[key] !==
                             undefined &&
-                          parsed[key] !== null
+                          parsed[key] !==
+                            null
                       )
                       .map(
                         ([key, title]) => ({
                           key,
                           title,
-                          body: parsed[key],
+                          body:
+                            parsed[key],
                         })
                       );
 
@@ -357,7 +527,11 @@ export default function Home() {
                     sections.length === 0
                   ) {
                     return (
-                      <div style={styles.fallback}>
+                      <div
+                        style={
+                          styles.fallback
+                        }
+                      >
                         {JSON.stringify(
                           parsed,
                           null,
@@ -375,7 +549,9 @@ export default function Home() {
                           index
                         ) => (
                           <details
-                            key={section.key}
+                            key={
+                              section.key
+                            }
                             style={
                               styles.accordion
                             }
@@ -403,7 +579,9 @@ export default function Home() {
                                   styles.sectionTitle
                                 }
                               >
-                                {section.title}
+                                {
+                                  section.title
+                                }
                               </span>
 
                               <span
@@ -432,20 +610,34 @@ export default function Home() {
                 })()}
               </>
             ) : (
-              <div style={styles.errorBox}>
+              <div
+                style={
+                  styles.errorBox
+                }
+              >
                 {result.error ? (
                   <>
-                    <div style={styles.errorTitle}>
+                    <div
+                      style={
+                        styles.errorTitle
+                      }
+                    >
                       Analysis unavailable
                     </div>
 
-                    <div style={styles.errorText}>
+                    <div
+                      style={
+                        styles.errorText
+                      }
+                    >
                       {result.error}
                     </div>
                   </>
                 ) : (
                   <pre
-                    style={styles.fallback}
+                    style={
+                      styles.fallback
+                    }
                   >
                     {JSON.stringify(
                       result,
@@ -632,8 +824,7 @@ const styles = {
   },
 
   body: {
-    padding:
-      "0 8px 20px 38px",
+    padding: "0 8px 20px 38px",
     fontSize: "14px",
     lineHeight: "1.7",
     color: "#d5d7da",
