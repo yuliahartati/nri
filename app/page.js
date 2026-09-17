@@ -30,107 +30,49 @@ const FIELD_LABELS = {
   uncertainty: "Uncertainty",
 };
 
-function parseAnalysis(text) {
-  if (!text) return [];
+function parseAnalysis(value) {
+  if (!value) return null;
 
-  // JSON format
+  if (typeof value === "object" && value !== null) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  let raw = value.trim();
+
+  raw = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
   try {
-    let jsonText = text.trim();
-
-    // Remove markdown code fences if present
-    jsonText = jsonText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    // If there is surrounding text, extract the JSON object
-    const firstBrace = jsonText.indexOf("{");
-    const lastBrace = jsonText.lastIndexOf("}");
-
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      jsonText = jsonText.slice(
-        firstBrace,
-        lastBrace + 1
-      );
-    }
-
-    const parsed = JSON.parse(jsonText);
+    const parsed = JSON.parse(raw);
 
     if (parsed && typeof parsed === "object") {
-      return Object.entries(FIELD_LABELS)
-        .filter(([key]) => parsed[key] !== undefined)
-        .map(([key, title]) => ({
-          title,
-          body: parsed[key],
-        }));
+      return parsed;
     }
-  } catch (error) {
-    console.error("NRI JSON parse failed:", error);
+  } catch (error) {}
+
+  const firstBrace = raw.indexOf("{");
+  const lastBrace = raw.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    try {
+      const parsed = JSON.parse(
+        raw.slice(firstBrace, lastBrace + 1)
+      );
+
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    } catch (error) {}
   }
 
-  // Legacy numbered format
-  const pattern = new RegExp(
-    `(\\d+\\.\\s*(?:${SECTION_TITLES.join("|")}))`,
-    "g"
-  );
-
-  const parts = String(text)
-    .split(pattern)
-    .filter((p) => p.trim() !== "");
-
-  const sections = [];
-
-  for (let i = 0; i < parts.length; i++) {
-    if (SECTION_TITLES.some((t) => parts[i].includes(t))) {
-      sections.push({
-        title: parts[i].trim(),
-        body: (parts[i + 1] || "").trim(),
-      });
-
-      i++;
-    }
-  }
-
-  return sections;
-}
-
-function renderSectionBody(body) {
-  if (Array.isArray(body)) {
-    return (
-      <ul style={styles.list}>
-        {body.map((item, index) => (
-          <li key={index} style={styles.listItem}>
-            {typeof item === "string"
-              ? item
-              : JSON.stringify(item)}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (typeof body === "object" && body !== null) {
-    return (
-      <div style={styles.objectBody}>
-        {Object.entries(body).map(([key, value]) => (
-          <div key={key} style={styles.objectItem}>
-            <div style={styles.objectKey}>
-              {key.replace(/_/g, " ")}
-            </div>
-
-            <div style={styles.objectValue}>
-              {typeof value === "string"
-                ? value
-                : JSON.stringify(value)}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return body;
+  return null;
 }
 
 function downloadMarkdown(analysisText, originalText) {
@@ -167,6 +109,59 @@ ${analysisText}
   document.body.removeChild(a);
 
   URL.revokeObjectURL(url);
+}
+
+function renderBody(body) {
+  if (Array.isArray(body)) {
+    return (
+      <div>
+        {body.map((item, index) => (
+          <div key={index} style={styles.listItem}>
+            <span style={styles.bullet}>•</span>
+            <span style={styles.listText}>
+              {typeof item === "string"
+                ? item
+                : JSON.stringify(item)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (
+    body &&
+    typeof body === "object"
+  ) {
+    return (
+      <div>
+        {Object.entries(body).map(
+          ([key, value]) => (
+            <div
+              key={key}
+              style={styles.objectItem}
+            >
+              <div style={styles.objectKey}>
+                {key.replace(/_/g, " ")}
+              </div>
+
+              <div>
+                {typeof value === "string"
+                  ? value
+                  : JSON.stringify(value)}
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {String(body ?? "")}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -243,6 +238,7 @@ export default function Home() {
   return (
     <main style={styles.page}>
       <section style={styles.container}>
+
         <div style={styles.logo}>NRI</div>
 
         <p style={styles.eyebrow}>
@@ -256,11 +252,12 @@ export default function Home() {
         </h1>
 
         <p style={styles.subtitle}>
-          Analytical assistance for understanding claims, evidence,
-          assumptions, framing, and missing context.
+          Analytical assistance for understanding claims,
+          evidence, assumptions, framing, and missing context.
         </p>
 
         <div style={styles.card}>
+
           <div style={styles.cardHeader}>
             <span>Analyze a narrative</span>
 
@@ -272,12 +269,12 @@ export default function Home() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            disabled={freeCount >= limit}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
 
           <div style={styles.bottomRow}>
+
             <span style={styles.counter}>
               {text.length} characters
             </span>
@@ -286,38 +283,31 @@ export default function Home() {
               onClick={handleAnalyze}
               disabled={
                 !text.trim() ||
-                loading ||
-                freeCount >= limit
+                loading
               }
               style={{
                 ...styles.button,
                 opacity:
-                  text.trim() &&
-                  !loading &&
-                  freeCount < limit
+                  text.trim() && !loading
                     ? 1
                     : 0.45,
               }}
             >
-              {loading ? "Analyzing..." : "Analyze →"}
+              {loading
+                ? "Analyzing..."
+                : "Analyze →"}
             </button>
+
           </div>
         </div>
 
         {result && (
           <div style={styles.resultCard}>
+
             {result.analysis ? (
               <>
-                <div style={styles.resultHeader}>
-                  <div>
-                    <div style={styles.resultTitle}>
-                      NRI Analysis
-                    </div>
-
-                    <div style={styles.resultSubtitle}>
-                      Structured narrative analysis
-                    </div>
-                  </div>
+                <div style={styles.cardHeader}>
+                  <span>NRI Analysis</span>
 
                   <button
                     onClick={() =>
@@ -332,69 +322,149 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div style={styles.sections}>
-                  {(() => {
-                    const sections = parseAnalysis(
-                      result.analysis
+                {(() => {
+                  const parsed = parseAnalysis(
+                    result.analysis
+                  );
+
+                  if (!parsed) {
+                    return (
+                      <div style={styles.fallback}>
+                        {String(
+                          result.analysis
+                        )}
+                      </div>
                     );
+                  }
 
-                    if (sections.length === 0) {
-                      return (
-                        <div style={styles.fallback}>
-                          {result.analysis}
-                        </div>
+                  const sections =
+                    Object.entries(FIELD_LABELS)
+                      .filter(
+                        ([key]) =>
+                          parsed[key] !==
+                            undefined &&
+                          parsed[key] !== null
+                      )
+                      .map(
+                        ([key, title]) => ({
+                          key,
+                          title,
+                          body: parsed[key],
+                        })
                       );
-                    }
 
-                    return sections.map((section, idx) => (
-                      <details
-                        key={idx}
-                        style={styles.accordionItem}
-                      >
-                        <summary
-                          style={styles.accordionSummary}
-                        >
-                          <span style={styles.sectionNumber}>
-                            {String(idx + 1).padStart(2, "0")}
-                          </span>
+                  if (
+                    sections.length === 0
+                  ) {
+                    return (
+                      <div style={styles.fallback}>
+                        {JSON.stringify(
+                          parsed,
+                          null,
+                          2
+                        )}
+                      </div>
+                    );
+                  }
 
-                          <span>
-                            {section.title}
-                          </span>
+                  return (
+                    <div>
+                      {sections.map(
+                        (
+                          section,
+                          index
+                        ) => (
+                          <details
+                            key={section.key}
+                            style={
+                              styles.accordion
+                            }
+                          >
+                            <summary
+                              style={
+                                styles.summary
+                              }
+                            >
+                              <span
+                                style={
+                                  styles.sectionNumber
+                                }
+                              >
+                                {String(
+                                  index + 1
+                                ).padStart(
+                                  2,
+                                  "0"
+                                )}
+                              </span>
 
-                          <span style={styles.chevron}>
-                            +
-                          </span>
-                        </summary>
+                              <span
+                                style={
+                                  styles.sectionTitle
+                                }
+                              >
+                                {section.title}
+                              </span>
 
-                        <div style={styles.accordionBody}>
-                          {renderSectionBody(
-                            section.body
-                          )}
-                        </div>
-                      </details>
-                    ));
-                  })()}
-                </div>
+                              <span
+                                style={
+                                  styles.chevron
+                                }
+                              >
+                                +
+                              </span>
+                            </summary>
+
+                            <div
+                              style={
+                                styles.body
+                              }
+                            >
+                              {renderBody(
+                                section.body
+                              )}
+                            </div>
+                          </details>
+                        )
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               <div style={styles.errorBox}>
-                <div style={styles.errorTitle}>
-                  Analysis unavailable
-                </div>
+                {result.error ? (
+                  <>
+                    <div style={styles.errorTitle}>
+                      Analysis unavailable
+                    </div>
 
-                <div style={styles.errorText}>
-                  {result.error ||
-                    "Something went wrong."}
-                </div>
+                    <div style={styles.errorText}>
+                      {result.error}
+                    </div>
+                  </>
+                ) : (
+                  <pre
+                    style={styles.fallback}
+                  >
+                    {JSON.stringify(
+                      result,
+                      null,
+                      2
+                    )}
+                  </pre>
+                )}
               </div>
             )}
+
           </div>
         )}
 
         <p style={styles.note}>
-          NRI provides analytical assistance, not an AI verdict.
+          NRI provides analytical assistance,
+          not an AI verdict.
         </p>
+
       </section>
     </main>
   );
@@ -413,7 +483,7 @@ const styles = {
     width: "100%",
     maxWidth: "720px",
     margin: "0 auto",
-    padding: "32px 20px 48px",
+    padding: "32px 20px 56px",
     boxSizing: "border-box",
   },
 
@@ -427,7 +497,7 @@ const styles = {
   eyebrow: {
     fontSize: "11px",
     letterSpacing: "2px",
-    opacity: 0.55,
+    opacity: 0.5,
     marginBottom: "18px",
   },
 
@@ -442,7 +512,7 @@ const styles = {
   subtitle: {
     fontSize: "16px",
     lineHeight: "1.6",
-    opacity: 0.65,
+    opacity: 0.62,
     maxWidth: "560px",
     marginBottom: "36px",
   },
@@ -452,6 +522,14 @@ const styles = {
     border: "1px solid #292d34",
     borderRadius: "18px",
     padding: "18px",
+  },
+
+  resultCard: {
+    background: "#15181d",
+    border: "1px solid #292d34",
+    borderRadius: "18px",
+    padding: "18px",
+    marginTop: "12px",
   },
 
   cardHeader: {
@@ -509,61 +587,28 @@ const styles = {
     cursor: "pointer",
   },
 
-  resultCard: {
-    marginTop: "18px",
-    background: "#15181d",
-    border: "1px solid #292d34",
-    borderRadius: "18px",
-    padding: "20px",
-  },
-
-  resultHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "16px",
-    paddingBottom: "18px",
-    borderBottom: "1px solid #292d34",
-  },
-
-  resultTitle: {
-    fontSize: "16px",
-    fontWeight: "700",
-    letterSpacing: "-0.2px",
-  },
-
-  resultSubtitle: {
-    fontSize: "11px",
-    opacity: 0.45,
-    marginTop: "4px",
-  },
-
   downloadBtn: {
     background: "transparent",
     border: "1px solid #292d34",
-    borderRadius: "9px",
-    padding: "8px 11px",
+    borderRadius: "8px",
+    padding: "7px 11px",
     color: "#f5f5f5",
     fontSize: "11px",
     cursor: "pointer",
   },
 
-  sections: {
-    marginTop: "8px",
-  },
-
-  accordionItem: {
-    borderBottom: "1px solid #292d34",
+  accordion: {
+    borderTop: "1px solid #292d34",
     padding: "0",
   },
 
-  accordionSummary: {
+  summary: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
+    padding: "17px 4px",
     cursor: "pointer",
     listStyle: "none",
-    padding: "17px 4px",
     fontSize: "14px",
     fontWeight: "600",
     outline: "none",
@@ -573,40 +618,45 @@ const styles = {
     fontSize: "10px",
     letterSpacing: "1px",
     opacity: 0.35,
-    minWidth: "20px",
+    width: "22px",
+  },
+
+  sectionTitle: {
+    flex: 1,
   },
 
   chevron: {
-    marginLeft: "auto",
     fontSize: "18px",
-    fontWeight: "300",
+    fontWeight: "400",
     opacity: 0.45,
   },
 
-  accordionBody: {
-    padding: "0 4px 20px 36px",
-    fontSize: "13px",
+  body: {
+    padding:
+      "0 8px 20px 38px",
+    fontSize: "14px",
     lineHeight: "1.7",
-    opacity: 0.78,
-  },
-
-  list: {
-    margin: 0,
-    paddingLeft: "18px",
+    color: "#d5d7da",
   },
 
   listItem: {
-    marginBottom: "9px",
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "10px",
+    marginBottom: "10px",
   },
 
-  objectBody: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
+  bullet: {
+    opacity: 0.45,
+    flexShrink: 0,
+  },
+
+  listText: {
+    flex: 1,
   },
 
   objectItem: {
-    paddingBottom: "10px",
+    marginBottom: "14px",
   },
 
   objectKey: {
@@ -617,16 +667,11 @@ const styles = {
     marginBottom: "4px",
   },
 
-  objectValue: {
-    whiteSpace: "pre-wrap",
-  },
-
   fallback: {
     whiteSpace: "pre-wrap",
     fontSize: "13px",
-    lineHeight: "1.7",
-    opacity: 0.78,
-    padding: "18px 4px",
+    lineHeight: "1.6",
+    opacity: 0.75,
   },
 
   errorBox: {
@@ -635,7 +680,7 @@ const styles = {
 
   errorTitle: {
     fontSize: "14px",
-    fontWeight: "700",
+    fontWeight: "600",
     marginBottom: "8px",
   },
 
