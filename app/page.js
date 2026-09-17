@@ -586,7 +586,7 @@ export default function Home() {
 
   async function handleAnalyze() {
     if (
-      freeCount >= 3
+      freeCount >= limit
     ) {
       setResult({
         error:
