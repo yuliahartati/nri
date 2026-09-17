@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useState, useEffect } from "react";
 
@@ -16,24 +16,99 @@ const SECTION_TITLES = [
   "Uncertainty",
 ];
 
+const FIELD_LABELS = {
+  narrative_overview: "Narrative Overview",
+  primary_claim: "Primary Claim",
+  evidence: "Evidence",
+  assumptions: "Assumptions",
+  framing: "Framing",
+  emotional_triggers: "Emotional Triggers",
+  missing_context: "Missing Context",
+  reasoning_risks: "Reasoning Risks",
+  alternative_interpretations: "Alternative Interpretations",
+  verification_questions: "Verification Questions",
+  uncertainty: "Uncertainty",
+};
+
 function parseAnalysis(text) {
+  // New JSON format
+  try {
+    const parsed = JSON.parse(text);
+
+    if (parsed && typeof parsed === "object") {
+      return Object.entries(FIELD_LABELS)
+        .filter(([key]) => parsed[key] !== undefined)
+        .map(([key, title]) => ({
+          title,
+          body: parsed[key],
+        }));
+    }
+  } catch (error) {
+    // Fall back to legacy text format
+  }
+
+  // Legacy numbered format
   const pattern = new RegExp(
     `(\\d+\\.\\s*(?:${SECTION_TITLES.join("|")}))`,
     "g"
   );
-  const parts = text.split(pattern).filter((p) => p.trim() !== "");
+
+  const parts = text
+    .split(pattern)
+    .filter((p) => p.trim() !== "");
 
   const sections = [];
+
   for (let i = 0; i < parts.length; i++) {
     if (SECTION_TITLES.some((t) => parts[i].includes(t))) {
       sections.push({
         title: parts[i].trim(),
         body: (parts[i + 1] || "").trim(),
       });
+
       i++;
     }
   }
+
   return sections;
+}
+
+function renderSectionBody(body) {
+  if (Array.isArray(body)) {
+    return (
+      <ul style={styles.list}>
+        {body.map((item, index) => (
+          <li key={index} style={styles.listItem}>
+            {typeof item === "string"
+              ? item
+              : JSON.stringify(item)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (typeof body === "object" && body !== null) {
+    return (
+      <div style={styles.objectBody}>
+        {Object.entries(body).map(([key, value]) => (
+          <div key={key} style={styles.objectItem}>
+            <div style={styles.objectKey}>
+              {key.replace(/_/g, " ")}
+            </div>
+
+            <div style={styles.objectValue}>
+              {typeof value === "string"
+                ? value
+                : JSON.stringify(value)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return body;
 }
 
 function downloadMarkdown(analysisText, originalText) {
@@ -208,11 +283,19 @@ export default function Home() {
         </div>
 
         {result && (
-          <div style={styles.card}>
+          <div style={styles.resultCard}>
             {result.analysis ? (
               <>
-                <div style={styles.cardHeader}>
-                  <span>NRI Analysis</span>
+                <div style={styles.resultHeader}>
+                  <div>
+                    <div style={styles.resultTitle}>
+                      NRI Analysis
+                    </div>
+
+                    <div style={styles.resultSubtitle}>
+                      Structured narrative analysis
+                    </div>
+                  </div>
 
                   <button
                     onClick={() =>
@@ -223,63 +306,66 @@ export default function Home() {
                     }
                     style={styles.downloadBtn}
                   >
-                    ⬇ .md
+                    ↓ .md
                   </button>
                 </div>
 
-                {(() => {
-                  const sections = parseAnalysis(
-                    result.analysis
-                  );
-
-                  if (sections.length === 0) {
-                    return (
-                      <div
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          fontSize: "13px",
-                          lineHeight: "1.6",
-                          opacity: 0.78,
-                        }}
-                      >
-                        {result.analysis}
-                      </div>
+                <div style={styles.sections}>
+                  {(() => {
+                    const sections = parseAnalysis(
+                      result.analysis
                     );
-                  }
 
-                  return sections.map((section, idx) => (
-                    <details
-                      key={idx}
-                      style={styles.accordionItem}
-                    >
-                      <summary
-                        style={styles.accordionSummary}
+                    if (sections.length === 0) {
+                      return (
+                        <div style={styles.fallback}>
+                          {result.analysis}
+                        </div>
+                      );
+                    }
+
+                    return sections.map((section, idx) => (
+                      <details
+                        key={idx}
+                        style={styles.accordionItem}
                       >
-                        {section.title}
-                      </summary>
+                        <summary
+                          style={styles.accordionSummary}
+                        >
+                          <span style={styles.sectionNumber}>
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
 
-                      <div style={styles.accordionBody}>
-                        {section.body}
-                      </div>
-                    </details>
-                  ));
-                })()}
+                          <span>
+                            {section.title}
+                          </span>
+
+                          <span style={styles.chevron}>
+                            +
+                          </span>
+                        </summary>
+
+                        <div style={styles.accordionBody}>
+                          {renderSectionBody(
+                            section.body
+                          )}
+                        </div>
+                      </details>
+                    ));
+                  })()}
+                </div>
               </>
             ) : (
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  fontSize: "13px",
-                  lineHeight: "1.5",
-                  opacity: 0.75,
-                }}
-              >
-                {JSON.stringify(
-                  result,
-                  null,
-                  2
-                )}
-              </pre>
+              <div style={styles.errorBox}>
+                <div style={styles.errorTitle}>
+                  Analysis unavailable
+                </div>
+
+                <div style={styles.errorText}>
+                  {result.error ||
+                    "Something went wrong."}
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -401,37 +487,140 @@ const styles = {
     cursor: "pointer",
   },
 
+  resultCard: {
+    marginTop: "18px",
+    background: "#15181d",
+    border: "1px solid #292d34",
+    borderRadius: "18px",
+    padding: "20px",
+  },
+
+  resultHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "16px",
+    paddingBottom: "18px",
+    borderBottom: "1px solid #292d34",
+  },
+
+  resultTitle: {
+    fontSize: "16px",
+    fontWeight: "700",
+    letterSpacing: "-0.2px",
+  },
+
+  resultSubtitle: {
+    fontSize: "11px",
+    opacity: 0.45,
+    marginTop: "4px",
+  },
+
   downloadBtn: {
     background: "transparent",
     border: "1px solid #292d34",
-    borderRadius: "8px",
-    padding: "6px 10px",
+    borderRadius: "9px",
+    padding: "8px 11px",
     color: "#f5f5f5",
     fontSize: "11px",
     cursor: "pointer",
   },
 
+  sections: {
+    marginTop: "8px",
+  },
+
   accordionItem: {
-    border: "1px solid #292d34",
-    borderRadius: "10px",
-    padding: "12px 14px",
-    marginBottom: "10px",
-    background: "#0d0f12",
+    borderBottom: "1px solid #292d34",
+    padding: "0",
   },
 
   accordionSummary: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
     cursor: "pointer",
+    listStyle: "none",
+    padding: "17px 4px",
     fontSize: "14px",
     fontWeight: "600",
     outline: "none",
   },
 
+  sectionNumber: {
+    fontSize: "10px",
+    letterSpacing: "1px",
+    opacity: 0.35,
+    minWidth: "20px",
+  },
+
+  chevron: {
+    marginLeft: "auto",
+    fontSize: "18px",
+    fontWeight: "300",
+    opacity: 0.45,
+  },
+
   accordionBody: {
+    padding: "0 4px 20px 36px",
+    fontSize: "13px",
+    lineHeight: "1.7",
+    opacity: 0.78,
+  },
+
+  list: {
+    margin: 0,
+    paddingLeft: "18px",
+  },
+
+  listItem: {
+    marginBottom: "9px",
+  },
+
+  objectBody: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+
+  objectItem: {
+    paddingBottom: "10px",
+  },
+
+  objectKey: {
+    fontSize: "10px",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+    opacity: 0.4,
+    marginBottom: "4px",
+  },
+
+  objectValue: {
+    whiteSpace: "pre-wrap",
+  },
+
+  fallback: {
     whiteSpace: "pre-wrap",
     fontSize: "13px",
+    lineHeight: "1.7",
+    opacity: 0.78,
+    padding: "18px 4px",
+  },
+
+  errorBox: {
+    padding: "12px 4px",
+  },
+
+  errorTitle: {
+    fontSize: "14px",
+    fontWeight: "700",
+    marginBottom: "8px",
+  },
+
+  errorText: {
+    fontSize: "13px",
     lineHeight: "1.6",
-    opacity: 0.8,
-    marginTop: "10px",
+    opacity: 0.65,
   },
 
   note: {
