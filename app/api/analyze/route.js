@@ -380,7 +380,8 @@ For each field:
 - Prefer fewer precise items over many weak or generic items.
 `;
 
-const PRO_USER_PROMPT = `
+function buildProUserPrompt(text) {
+  return `
 Analyze the following text using the NRI 11-field narrative analysis schema.
 
 Return ONLY valid JSON.
@@ -497,6 +498,7 @@ TEXT:
 
 ${text}
 `;
+}
 
 export async function GET(request) {
   try {
@@ -548,37 +550,34 @@ export async function POST(request) {
     }
 
     const isPro = isTestPro;
-
     const systemPrompt = isPro
-      ? PRO_SYSTEM_PROMPT
-      : FREE_SYSTEM_PROMPT;
-
-    const input = isPro
-      ? [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: PRO_USER_PROMPT,
-          },
-        ]
-      : [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: text,
-          },
-        ];
+    ? PRO_SYSTEM_PROMPT
+    : FREE_SYSTEM_PROMPT;
 
     const response = await openai.responses.create({
-      model: "gpt-5.6-luna",
-      input,
-    });
+  model: "gpt-5.6-luna",
+  input: isPro
+    ? [
+        {
+          role: "system",
+          content: PRO_SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: buildProUserPrompt(text),
+        },
+      ]
+    : [
+        {
+          role: "system",
+          content: FREE_SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: text,
+        },
+      ],
+});
 
     const newUsage = usage.used + 1;
 
