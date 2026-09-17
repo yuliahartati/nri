@@ -31,22 +31,31 @@ const FIELD_LABELS = {
 };
 
 function parseAnalysis(text) {
-  // New JSON format
+  if (!text) return [];
+
+  // JSON format
   try {
-    let jsonText = text;
+    let jsonText = text.trim();
 
-    if (typeof jsonText === "string") {
-      jsonText = jsonText.trim();
+    // Remove markdown code fences if present
+    jsonText = jsonText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
 
-      // Tolerate markdown code fences some responses may wrap JSON in
-      const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-      if (fenceMatch) {
-        jsonText = fenceMatch[1].trim();
-      }
+    // If there is surrounding text, extract the JSON object
+    const firstBrace = jsonText.indexOf("{");
+    const lastBrace = jsonText.lastIndexOf("}");
+
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      jsonText = jsonText.slice(
+        firstBrace,
+        lastBrace + 1
+      );
     }
 
-    const parsed =
-      typeof jsonText === "string" ? JSON.parse(jsonText) : jsonText;
+    const parsed = JSON.parse(jsonText);
 
     if (parsed && typeof parsed === "object") {
       return Object.entries(FIELD_LABELS)
@@ -57,7 +66,7 @@ function parseAnalysis(text) {
         }));
     }
   } catch (error) {
-    // Fall back to legacy text format
+    console.error("NRI JSON parse failed:", error);
   }
 
   // Legacy numbered format
@@ -66,7 +75,7 @@ function parseAnalysis(text) {
     "g"
   );
 
-  const parts = text
+  const parts = String(text)
     .split(pattern)
     .filter((p) => p.trim() !== "");
 
