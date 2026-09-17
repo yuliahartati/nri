@@ -17,15 +17,20 @@ const FREE_LIMIT = 999;
 function hashIP(ip) {
   return crypto
     .createHash("sha256")
-    .update(`${ip}:${process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN}`)
+    .update(
+      `${ip}:${process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN}`
+    )
     .digest("hex");
 }
 
 function getIP(request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
+  const forwardedFor =
+    request.headers.get("x-forwarded-for");
 
   if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
+    return forwardedFor
+      .split(",")[0]
+      .trim();
   }
 
   return "unknown";
@@ -34,30 +39,54 @@ function getIP(request) {
 async function getUsage(request) {
   const cookieStore = await cookies();
 
-  let sessionId = cookieStore.get("nri_session")?.value;
+  let sessionId =
+    cookieStore.get("nri_session")?.value;
 
   if (!sessionId) {
     sessionId = crypto.randomUUID();
 
-    cookieStore.set("nri_session", sessionId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-    });
+    cookieStore.set(
+      "nri_session",
+      sessionId,
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      }
+    );
   }
 
   const ipHash = hashIP(getIP(request));
 
-  const sessionKey = `nri:usage:session:${sessionId}`;
-  const ipKey = `nri:usage:ip:${ipHash}`;
+  const sessionKey =
+    `nri:usage:session:${sessionId}`;
 
-  const sessionUsage = Number((await redis.get(sessionKey)) || 0);
-  const ipUsage = Number((await redis.get(ipKey)) || 0);
+  const ipKey =
+    `nri:usage:ip:${ipHash}`;
 
-  const used = Math.max(sessionUsage, ipUsage);
-  const remaining = Math.max(0, FREE_LIMIT - used);
+  const sessionUsage =
+    Number(
+      (await redis.get(sessionKey)) || 0
+    );
+
+  const ipUsage =
+    Number(
+      (await redis.get(ipKey)) || 0
+    );
+
+  const used =
+    Math.max(
+      sessionUsage,
+      ipUsage
+    );
+
+  const remaining =
+    Math.max(
+      0,
+      FREE_LIMIT - used
+    );
 
   return {
     sessionKey,
@@ -101,6 +130,15 @@ Do NOT add any other sections.
 Be neutral and evidence-oriented.
 Do not invent facts that are not present in the submitted text.
 If information is insufficient, explicitly say so.
+
+OUTPUT COMPRESSION:
+
+Keep the analysis compact and information-dense.
+
+Do not repeat the submitted narrative.
+Do not write essay-style explanations.
+Prioritize the most analytically important information.
+Remove repetition and low-value elaboration while preserving the analytical meaning.
 `;
 
 const PRO_SYSTEM_PROMPT = `
@@ -370,14 +408,33 @@ No markdown.
 No explanation.
 No commentary before or after the JSON.
 
-LENGTH RULE:
+COMPRESSION RULE:
 
-Keep each analytical item concise.
+The output must be compact and information-dense.
 
-For each field:
-- Prefer one core sentence.
-- At most one additional short sentence when necessary.
-- Prefer fewer precise items over many weak or generic items.
+Do NOT write an essay for any parameter.
+
+Do NOT repeat the narrative.
+
+Do NOT repeat the same reasoning across multiple parameters.
+
+For scalar fields:
+- preserve the core analytical meaning in the shortest precise wording possible.
+
+For array fields:
+- each item must contain only the core analytical point.
+- prefer fewer strong items over many weak items.
+- do not elaborate an item unless the additional wording materially changes its meaning.
+
+The goal is NOT to simplify the analysis.
+The goal is to compress it while preserving:
+- the central reasoning
+- important distinctions
+- relevant evidence
+- meaningful uncertainty
+- important analytical risks
+
+Think deeply, then return only the compressed analytical result.
 `;
 
 function buildProUserPrompt(text) {
@@ -489,10 +546,26 @@ GENERAL RULES:
 - Do not determine whether the narrative is true or false.
 - Return ONLY the JSON object.
 
-LENGTH RULE:
+COMPRESSION RULE:
 
-For each analytical item, use one core sentence.
-Add at most one short additional sentence only when necessary.
+Think deeply about the supplied narrative first.
+
+Then compress the result before returning it.
+
+Do not write a long essay for any parameter.
+
+Keep each scalar parameter concise.
+
+Keep each array item concise and focused on one analytical point.
+
+Remove repetition, exposition, background explanation, and low-value
+elaboration.
+
+Preserve the analytical substance, distinctions, evidence, risks,
+alternative interpretations, and uncertainty that materially matter.
+
+The output should be compact enough to be presented directly inside
+NRI's accordion interface.
 
 TEXT:
 
@@ -502,20 +575,26 @@ ${text}
 
 export async function GET(request) {
   try {
-    const usage = await getUsage(request);
+    const usage =
+      await getUsage(request);
 
     return Response.json({
       success: true,
       limit: FREE_LIMIT,
       used: usage.used,
-      remaining: usage.remaining,
+      remaining:
+        usage.remaining,
     });
   } catch (error) {
-    console.error("NRI quota error:", error);
+    console.error(
+      "NRI quota error:",
+      error
+    );
 
     return Response.json(
       {
-        error: "Unable to check usage.",
+        error:
+          "Unable to check usage.",
       },
       { status: 500 }
     );
@@ -524,24 +603,39 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
+
     const text = body.text;
 
-    if (!text || !text.trim()) {
+    if (
+      !text ||
+      !text.trim()
+    ) {
       return Response.json(
-        { error: "Text is required." },
+        {
+          error:
+            "Text is required.",
+        },
         { status: 400 }
       );
     }
 
-    const usage = await getUsage(request);
+    const usage =
+      await getUsage(request);
 
-    const isTestPro = process.env.NRI_TEST_PRO === "true";
+    const isTestPro =
+      process.env.NRI_TEST_PRO ===
+      "true";
 
-    if (!isTestPro && usage.remaining <= 0) {
+    if (
+      !isTestPro &&
+      usage.remaining <= 0
+    ) {
       return Response.json(
         {
-          error: "Free analysis limit reached.",
+          error:
+            "Free analysis limit reached.",
           limit: FREE_LIMIT,
           remaining: 0,
         },
@@ -550,61 +644,102 @@ export async function POST(request) {
     }
 
     const isPro = isTestPro;
+
     const systemPrompt = isPro
-    ? PRO_SYSTEM_PROMPT
-    : FREE_SYSTEM_PROMPT;
+      ? PRO_SYSTEM_PROMPT
+      : FREE_SYSTEM_PROMPT;
 
-    const response = await openai.responses.create({
-  model: "gpt-5.6-luna",
-  input: isPro
-    ? [
-        {
-          role: "system",
-          content: PRO_SYSTEM_PROMPT,
-        },
-        {
-          role: "user",
-          content: buildProUserPrompt(text),
-        },
-      ]
-    : [
-        {
-          role: "system",
-          content: FREE_SYSTEM_PROMPT,
-        },
-        {
-          role: "user",
-          content: text,
-        },
-      ],
-});
+    const response =
+      await openai.responses.create({
+        model: "gpt-5.6-luna",
 
-    const newUsage = usage.used + 1;
+        input: isPro
+          ? [
+              {
+                role: "system",
+                content:
+                  systemPrompt,
+              },
+              {
+                role: "user",
+                content:
+                  buildProUserPrompt(
+                    text
+                  ),
+              },
+            ]
+          : [
+              {
+                role: "system",
+                content:
+                  systemPrompt,
+              },
+              {
+                role: "user",
+                content: text,
+              },
+            ],
 
-    await redis.set(usage.sessionKey, newUsage, {
-      ex: 60 * 60 * 24 * 30,
-    });
+        max_output_tokens: 6000,
+      });
 
-    await redis.set(usage.ipKey, newUsage, {
-      ex: 60 * 60 * 24 * 30,
-    });
+    const newUsage =
+      usage.used + 1;
+
+    await redis.set(
+      usage.sessionKey,
+      newUsage,
+      {
+        ex:
+          60 *
+          60 *
+          24 *
+          30,
+      }
+    );
+
+    await redis.set(
+      usage.ipKey,
+      newUsage,
+      {
+        ex:
+          60 *
+          60 *
+          24 *
+          30,
+      }
+    );
 
     return Response.json({
       success: true,
-      analysis: response.output_text,
+      analysis:
+        response.output_text,
+
       usage: {
         used: newUsage,
-        limit: FREE_LIMIT,
-        remaining: Math.max(0, FREE_LIMIT - newUsage),
+        limit:
+          FREE_LIMIT,
+        remaining:
+          Math.max(
+            0,
+            FREE_LIMIT -
+              newUsage
+          ),
       },
     });
   } catch (error) {
-    console.error("NRI analysis error:", error);
+    console.error(
+      "NRI analysis error:",
+      error
+    );
 
     return Response.json(
       {
-        error: "Analysis failed.",
-        details: error?.message || "Unknown error.",
+        error:
+          "Analysis failed.",
+        details:
+          error?.message ||
+          "Unknown error.",
       },
       { status: 500 }
     );
