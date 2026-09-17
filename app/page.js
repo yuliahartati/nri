@@ -3,11 +3,17 @@
 import { useState, useEffect } from "react";
 
 const SECTION_TITLES = [
+  "Narrative Overview",
   "Primary Claim",
   "Evidence",
   "Assumptions",
   "Framing",
+  "Emotional Triggers",
   "Missing Context",
+  "Reasoning Risks",
+  "Alternative Interpretations",
+  "Verification Questions",
+  "Uncertainty",
 ];
 
 function parseAnalysis(text) {
@@ -49,14 +55,20 @@ ${originalText}
 ${analysisText}
 `;
 
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const blob = new Blob([content], {
+    type: "text/markdown;charset=utf-8",
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = `nri-analysis-${stamp}.md`;
+
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
 }
 
@@ -201,8 +213,14 @@ export default function Home() {
               <>
                 <div style={styles.cardHeader}>
                   <span>NRI Analysis</span>
+
                   <button
-                    onClick={() => downloadMarkdown(result.analysis, text)}
+                    onClick={() =>
+                      downloadMarkdown(
+                        result.analysis,
+                        text
+                      )
+                    }
                     style={styles.downloadBtn}
                   >
                     ⬇ .md
@@ -210,7 +228,9 @@ export default function Home() {
                 </div>
 
                 {(() => {
-                  const sections = parseAnalysis(result.analysis);
+                  const sections = parseAnalysis(
+                    result.analysis
+                  );
 
                   if (sections.length === 0) {
                     return (
@@ -228,10 +248,16 @@ export default function Home() {
                   }
 
                   return sections.map((section, idx) => (
-                    <details key={idx} style={styles.accordionItem}>
-                      <summary style={styles.accordionSummary}>
+                    <details
+                      key={idx}
+                      style={styles.accordionItem}
+                    >
+                      <summary
+                        style={styles.accordionSummary}
+                      >
                         {section.title}
                       </summary>
+
                       <div style={styles.accordionBody}>
                         {section.body}
                       </div>
@@ -248,7 +274,11 @@ export default function Home() {
                   opacity: 0.75,
                 }}
               >
-                {JSON.stringify(result, null, 2)}
+                {JSON.stringify(
+                  result,
+                  null,
+                  2
+                )}
               </pre>
             )}
           </div>
