@@ -12,7 +12,7 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
 });
 
-const FREE_LIMIT = 999;
+const FREE_LIMIT = 3;
 
 function hashIP(ip) {
   return crypto
