@@ -14,6 +14,11 @@ const redis = new Redis({
 
 const FREE_LIMIT = 3;
 
+// NEW TESTING QUOTA NAMESPACE
+// This intentionally starts a fresh quota without deleting
+// the previous Redis data.
+const QUOTA_NAMESPACE = "v2";
+
 function hashIP(ip) {
   return crypto
     .createHash("sha256")
@@ -61,10 +66,10 @@ async function getUsage(request) {
   const ipHash = hashIP(getIP(request));
 
   const sessionKey =
-    `nri:usage:session:${sessionId}`;
+    `nri:usage:${QUOTA_NAMESPACE}:session:${sessionId}`;
 
   const ipKey =
-    `nri:usage:ip:${ipHash}`;
+    `nri:usage:${QUOTA_NAMESPACE}:ip:${ipHash}`;
 
   const sessionUsage =
     Number(
