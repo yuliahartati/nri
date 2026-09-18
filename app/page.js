@@ -75,11 +75,12 @@ const keyPattern = new RegExp(
 "m"
 );
 
-const match = keyPattern.exec(raw);  
+const marker = `"${key}":`;
+const matchIndex = raw.indexOf(marker);
 
-if (!match) continue;  
+if (matchIndex === -1) continue;
 
-const start = match.index + match[0].length;  
+const start = matchIndex + marker.length; 
 const remainder = raw.slice(start).trimStart();  
 
 // String field  
