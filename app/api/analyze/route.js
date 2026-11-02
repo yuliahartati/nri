@@ -585,7 +585,7 @@ export async function GET(request) {
 
     return Response.json({
       success: true,
-      limit: FREE_LIMIT,
+      limit: FREE_LIMI,
       used: usage.used,
       remaining:
         usage.remaining,
