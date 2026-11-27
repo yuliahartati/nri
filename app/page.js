@@ -70,10 +70,10 @@ if (parsed && typeof parsed === "object") {
 const recovered = {};
 
 for (const key of Object.keys(FIELD_LABELS)) {
-const keyPattern = new RegExp(
-"${key}"\\s*:,
-"m"
-);
+  const keyPattern = new RegExp(
+    String.raw`"${key}"\s*:`,
+    "m"
+  );
 
 const marker = `"${key}":`;
 const matchIndex = raw.indexOf(marker);
