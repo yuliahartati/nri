@@ -381,6 +381,52 @@ export default function Home() {
           </div>
         )}
 
+<div style={{ marginTop: "48px", borderTop: "1px solid #292d34", paddingTop: "32px" }}>
+          <h2 style={{ fontSize: "22px", marginBottom: "12px" }}>Kenapa NRI beda?</h2>
+          <p style={{ fontSize: "14px", lineHeight: "1.7", opacity: 0.7 }}>
+            NRI nggak kasih verdict benar atau salah. Dia nunjukin apa yang nggak kamu lihat: klaimnya apa, buktinya ada atau kosong, asumsinya apa, framing-nya gimana, dan konteks apa yang hilang.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginTop: "20px" }}>
+            <div style={{ background: "#15181d", border: "1px solid #292d34", borderRadius: "12px", padding: "16px" }}>
+              <b>1. Paste</b>
+              <p style={{ fontSize: "13px", opacity: 0.7, marginTop: "6px" }}>Paste berita, caption, atau argumen.</p>
+            </div>
+            <div style={{ background: "#15181d", border: "1px solid #292d34", borderRadius: "12px", padding: "16px" }}>
+              <b>2. Lihat strukturnya</b>
+              <p style={{ fontSize: "13px", opacity: 0.7, marginTop: "6px" }}>Buka 11 field, dari claim sampai uncertainty.</p>
+            </div>
+            <div style={{ background: "#15181d", border: "1px solid #292d34", borderRadius: "12px", padding: "16px" }}>
+              <b>3. Cek blind spot</b>
+              <p style={{ fontSize: "13px", opacity: 0.7, marginTop: "6px" }}>Apa yang diasumsikan tanpa bukti?</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: "40px", background: "#15181d", border: "1px solid #292d34", borderRadius: "16px", padding: "20px" }}>
+          <h2 style={{ fontSize: "18px", marginBottom: "10px" }}>Contoh blind spot</h2>
+          <p style={{ fontSize: "14px", fontStyle: "italic", opacity: 0.8 }}>
+            &quot;Mengapa pemerintah terus-menerus berbohong dan mencuri uang rakyat?&quot;
+          </p>
+          <p style={{ fontSize: "14px", lineHeight: "1.7", opacity: 0.7, marginTop: "12px" }}>
+            Pertanyaannya kelihatan netral, tapi sudah mengasumsikan pemerintah berbohong dan mencuri tanpa bukti. NRI nangkap itu di Assumptions dan Reasoning Risks, bukan ikut jawab pertanyaannya.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px", textAlign: "center" }}>
+          <h2 style={{ fontSize: "20px" }}>Habis 3x gratis?</h2>
+          <p style={{ fontSize: "14px", opacity: 0.7 }}>Basic 30x - Rp99.000 / Pro 100x - Rp149.000. Semua field kebuka di Pro.</p>
+          <a href="/pricing" style={{ display: "inline-block", background: "#f5f5f5", color: "#0b0d10", padding: "12px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: "700", fontSize: "14px", marginTop: "14px" }}>
+            Lihat Semua Paket
+          </a>
+        </div>
+
+        <div style={{ marginTop: "40px", borderTop: "1px solid #292d34", paddingTop: "24px", textAlign: "center" }}>
+          <p style={{ fontSize: "14px", fontWeight: "600" }}>Yulia Hartati</p>
+          <p style={{ fontSize: "13px", opacity: 0.6, lineHeight: "1.6", maxWidth: "520px", margin: "8px auto 0" }}>
+            Membangun NRI untuk literasi kognitif. Bukan buat menang debat, tapi buat lihat narasi lebih jernih sebelum bereaksi.
+          </p>
+        </div>
+
         <p style={styles.note}>NRI provides analytical assistance, not an AI verdict.</p>
       </section>
     </main>
