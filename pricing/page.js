@@ -42,7 +42,7 @@ export default function PricingPage() {
               <li>Download .MD rapi</li>
               <li>Termasuk Emotional Triggers, Alternative Interpretations, Verification Questions, Uncertainty</li>
             </ul>
-            <a href="https://wa.me/6280000000000?text=Halo, saya mau pilih paket Pro NRI Rp149.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Pro</a>
+            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Pro NRI Rp149.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Pro</a>
           </div>
 
           <div style={{ border: "1px solid #333", borderRadius: "16px", padding: "20px" }}>
@@ -55,7 +55,7 @@ export default function PricingPage() {
               <li>Untuk sekolah, komunitas, perusahaan</li>
               <li>Analisa marketing, komentar konsumen, narasi pegawai</li>
             </ul>
-            <a href="https://wa.me/6280000000000?text=Halo, saya mau tanya paket Enterprise NRI / API" style={{ display: "block", textAlign: "center", background: "#333", color: "white", padding: "10px", borderRadius: "10px", textDecoration: "none" }}>Hubungi Kami</a>
+            <a href="https://wa.me/6289518935001?text=Halo, saya mau tanya paket Enterprise NRI / API" style={{ display: "block", textAlign: "center", background: "#333", color: "white", padding: "10px", borderRadius: "10px", textDecoration: "none" }}>Hubungi Kami</a>
           </div>
 
         </div>
