@@ -17,7 +17,7 @@ const FREE_LIMIT = 3;
 // NEW TESTING QUOTA NAMESPACE
 // This intentionally starts a fresh quota without deleting
 // the previous Redis data.
-const QUOTA_NAMESPACE = "v2";
+const QUOTA_NAMESPACE = "v3";
 
 function hashIP(ip) {
   return crypto
