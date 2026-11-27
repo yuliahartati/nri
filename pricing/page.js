@@ -30,7 +30,7 @@ export default function PricingPage() {
               <li>4 field masih dikunci</li>
               <li>Cocok buat personal</li>
             </ul>
-            <a href="https://wa.me/6280000000000?text=Halo, saya mau pilih paket Basic NRI Rp99.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Basic</a>
+            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Basic NRI Rp99.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Basic</a>
           </div>
 
           <div style={{ border: "2px solid white", borderRadius: "16px", padding: "20px" }}>
