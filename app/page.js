@@ -234,7 +234,7 @@ const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 
 a.href = url;
-a.download = nri-analysis-${stamp}.md;
+a.download = `nri-analysis-${stamp}.md`;
 
 document.body.appendChild(a);
 a.click();
