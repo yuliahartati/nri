@@ -3,18 +3,36 @@
 import { useState, useEffect } from "react";
 
 const FIELD_LABELS = {
-narrative_overview: "Narrative Overview",
-primary_claim: "Primary Claim",
-evidence: "Evidence",
-assumptions: "Assumptions",
-framing: "Framing",
-emotional_triggers: "Emotional Triggers",
-missing_context: "Missing Context",
-reasoning_risks: "Reasoning Risks",
-alternative_interpretations: "Alternative Interpretations",
-verification_questions: "Verification Questions",
-uncertainty: "Uncertainty",
+  narrative_overview: "Narrative Overview",
+  primary_claim: "Primary Claim",
+  evidence: "Evidence",
+  assumptions: "Assumptions",
+  framing: "Framing",
+  emotional_triggers: "Emotional Triggers",
+  missing_context: "Missing Context",
+  reasoning_risks: "Reasoning Risks",
+  alternative_interpretations: "Alternative Interpretations",
+  verification_questions: "Verification Questions",
+  uncertainty: "Uncertainty",
 };
+
+const FREE_FIELDS = [
+  "narrative_overview",
+  "primary_claim",
+  "evidence",
+  "assumptions",
+  "framing",
+];
+
+const BASIC_FIELDS = [
+  "narrative_overview",
+  "primary_claim",
+  "evidence",
+  "assumptions",
+  "framing",
+  "missing_context",
+  "reasoning_risks",
+];
 
 function cleanAnalysisText(value) {
 return String(value ?? "")
@@ -208,39 +226,65 @@ return Object.keys(recovered).length > 0
 }
 
 function downloadMarkdown(analysisText, originalText) {
-const stamp = new Date()
-.toISOString()
-.replace(/[:.]/g, "-")
-.slice(0, 19);
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .slice(0, 19);
 
-const content = `# NRI Analysis Report
+  const parsed = parseAnalysis(analysisText);
+  let analysisSection = "";
+
+  if (parsed && typeof parsed === "object") {
+    for (const key of Object.keys(FIELD_LABELS)) {
+      const value = parsed[key];
+      if (value === undefined || value === null) continue;
+
+      analysisSection += `## ${FIELD_LABELS[key]}\n\n`;
+
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          analysisSection += `Tidak ada bukti substantif.\n\n`;
+        } else {
+          for (const item of value) {
+            analysisSection += `- ${String(item)}\n`;
+          }
+          analysisSection += `\n`;
+        }
+      } else {
+        analysisSection += `${String(value)}\n\n`;
+      }
+    }
+  } else {
+    analysisSection = `${String(analysisText || "")}\n`;
+  }
+
+  const content = `# NRI Analysis Report
 
 Generated: ${new Date().toLocaleString()}
 
-Original Text Analyzed
+## Original Text Analyzed
 
 ${originalText}
 
-Analysis
+## Analysis
 
-${analysisText}
-`;
+${analysisSection}`;
 
-const blob = new Blob([content], {
-type: "text/markdown;charset=utf-8",
-});
+  const blob = new Blob([content], {
+    type: "text/markdown;charset=utf-8",
+  });
 
-const url = URL.createObjectURL(blob);
-const a = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
 
-a.href = url;
-a.download = `nri-analysis-${stamp}.md`;
+  a.href = url;
+  a.download = `nri-analysis-${stamp}.md`;
 
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 
-URL.revokeObjectURL(url);
+  URL.revokeObjectURL(url);
 }
 
 function renderBody(body) {
@@ -275,9 +319,10 @@ return (
 key={key}  
 style={styles.objectItem}  
 >
-<div style={styles.objectKey}>
-{key.replace(/_/g, " ")}
-</div>
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "56px" }}>
+        <div style={styles.logo}>NRI</div>
+        <a href="/pricing" style={{ color: "#a1a1a1", fontSize: "14px", textDecoration: "none" }}>Pricing</a>
+      </div>
 
 <div>  
             {typeof value === "string"  
