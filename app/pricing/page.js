@@ -23,26 +23,26 @@ export default function PricingPage() {
 
           <div style={{ border: "1px solid #333", borderRadius: "16px", padding: "20px" }}>
             <h2>Basic</h2>
-            <p style={{ fontSize: "24px", fontWeight: "bold" }}>Rp99.000 <span style={{ fontSize: "14px", color: "#a1a1a1" }}>/ bulan</span></p>
+            <p style={{ fontSize: "24px", fontWeight: "bold" }}>Rp10.000<span style={{ fontSize: "14px", color: "#a1a1a1" }}>/ bulan</span></p>
             <p style={{ color: "#a1a1a1" }}>30x analisis / bulan</p>
             <ul>
               <li>7 field: Overview, Claim, Evidence, Assumptions, Framing, Missing Context, Reasoning Risks</li>
               <li>4 field masih dikunci</li>
               <li>Cocok buat personal</li>
             </ul>
-            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Basic NRI Rp99.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Basic</a>
+            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Basic NRI Rp10.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Basic</a>
           </div>
 
           <div style={{ border: "2px solid white", borderRadius: "16px", padding: "20px" }}>
             <h2>Pro ⭐ Paling Populer</h2>
-            <p style={{ fontSize: "24px", fontWeight: "bold" }}>Rp149.000 <span style={{ fontSize: "14px", color: "#a1a1a1" }}>/ bulan</span></p>
+            <p style={{ fontSize: "24px", fontWeight: "bold" }}>Rp10.000<span style={{ fontSize: "14px", color: "#a1a1a1" }}>/ bulan</span></p>
             <p style={{ color: "#a1a1a1" }}>100x analisis / bulan</p>
             <ul>
               <li>Semua 11 field kebuka</li>
               <li>Download .MD rapi</li>
               <li>Termasuk Emotional Triggers, Alternative Interpretations, Verification Questions, Uncertainty</li>
             </ul>
-            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Pro NRI Rp149.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Pro</a>
+            <a href="https://wa.me/6289518935001?text=Halo, saya mau pilih paket Pro NRI Rp10.000" style={{ display: "block", textAlign: "center", background: "white", color: "black", padding: "10px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold" }}>Pilih Pro</a>
           </div>
 
           <div style={{ border: "1px solid #333", borderRadius: "16px", padding: "20px" }}>
