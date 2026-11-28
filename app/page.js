@@ -1,20 +1,16 @@
 "use client";
 import { useState } from "react";
 
-// MASTER PAGE - NRI - yuliahartati.com
-// Kunci master dari gambar terakhir:
-// - Header + foto 1 blok, header nempel di atas foto, bukan bar pisah
-// - Logo samping teks NARRATIVE REASONING INTELLIGENCE
-// - Tombol Analisis Gratis teal polos, tanpa bintang, tulisan gede, rata kiri
-// - Blok NRI Analisis tanpa logo NRI
-// - Artikel Terbaru 4, widget medsos DI DALAM tiap kolom artikel, rata 1 baris sama tanggal
-// - Tanpa gold, tanpa lihat ig/fb/paket, tanpa harga/angka di halaman ini
-// - Setelah 3x gratis habis -> lempar ke /pricing (halaman produk)
+// MASTER PAGE v2 - NRI - yuliahartati.com
+// Revisi biar 100% nempel master gambar:
+// - Tanpa angka di halaman pertama (tanpa Sisa gratis, tanpa X / 8000)
+// - Tanpa label dobel, cuma placeholder di input
+// - Tanpa badge kategori di artikel, sesuai master
+// - Setelah 3x gratis habis -> lempar ke /pricing
 
 const ARTICLES = [
   {
     id: 1,
-    cat: "Opini",
     title: "Mengapa Narasi Bisa Mengalahkan Data",
     excerpt: "Data tidak pernah bicara sendiri. Yang bicara adalah cara kita menyusunnya menjadi cerita.",
     date: "12 Okt 2024",
@@ -26,7 +22,6 @@ const ARTICLES = [
   },
   {
     id: 2,
-    cat: "Analisis",
     title: "Blind Spot: Yang Tidak Ditulis Justru Yang Penting",
     excerpt: "Dalam teks, yang hilang sering lebih jujur daripada yang ditulis.",
     date: "12 Okt 2024",
@@ -38,7 +33,6 @@ const ARTICLES = [
   },
   {
     id: 3,
-    cat: "Opini",
     title: "Berpikir Kritis Bukan Berarti Sinis",
     excerpt: "Kritis itu bertanya dengan struktur, bukan curiga tanpa bukti.",
     date: "12 Okt 2024",
@@ -50,7 +44,6 @@ const ARTICLES = [
   },
   {
     id: 4,
-    cat: "Analisis",
     title: "Cara Membaca Teks Tanpa Terkecoh Gaya Bahasa",
     excerpt: "Gaya bahasa bisa menutupi logika yang bolong. Ini cara membedahnya.",
     date: "12 Okt 2024",
@@ -82,7 +75,7 @@ export default function Home() {
   async function handleAnalisis() {
     if (!text.trim()) return;
     if (text.length > 8000) {
-      alert("Teks melebihi batas. Maksimal 8000 karakter.");
+      alert("Teks melebihi batas.");
       return;
     }
     if (remaining <= 0) {
@@ -108,17 +101,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f6f1e7] text-[#1a2e2a] font-sans">
-      {/* ============ HERO - 1 BLOK: HEADER + FOTO JADI SATU ============ */}
+      {/* HERO - 1 BLOK: HEADER + FOTO JADI SATU */}
       <section className="relative w-full overflow-hidden">
-        {/* Foto latar - ganti /hero-yulia.jpg dengan foto kamu, crop tanpa puncak gunung */}
         <img src="/hero-yulia.jpg" alt="Yulia Hartati" className="w-full h-[560px] object-cover object-[center_20%] block" />
-        {/* Overlay tipis biar teks kebaca, bukan blok warna pisah */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20 pointer-events-none" />
 
-        {/* HEADER - nempel di atas foto, bukan bar pisah */}
         <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-5 z-20">
           <div className="flex items-center gap-2.5">
-            {/* Logo transparan - file logo kamu */}
             <img src="/nri-logo-transparent.png" alt="NRI" className="w-11 h-11 rounded-full object-cover bg-white/10" />
             <span className="text-white text-[11px] leading-[1.1] font-bold tracking-[0.14em] drop-shadow">
               NARRATIVE<br />REASONING<br />INTELLIGENCE
@@ -141,7 +130,6 @@ export default function Home() {
           </nav>
         )}
 
-        {/* Headline - di atas foto, rata kiri */}
         <div className="absolute left-5 right-5 bottom-[118px] z-10">
           <h1 className="text-white text-[42px] leading-[1.02] font-serif font-bold drop-shadow-lg">
             Baca, Pahami,<br />dan Analisis Teks<br />dalam Sekejap.
@@ -149,10 +137,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ BLOK NRI ANALISIS - PISAH DARI ARTIKEL ============ */}
+      {/* BLOK ANALISIS - PISAH DARI ARTIKEL */}
       <section className="px-4 -mt-[92px] relative z-20">
         <div className="bg-white rounded-[28px] shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-5">
-          {/* Tombol Analisis Gratis - teal polos, tanpa bintang, tulisan gede, rata kiri */}
           <button
             onClick={handleAnalisis}
             disabled={loading}
@@ -162,7 +149,6 @@ export default function Home() {
           </button>
 
           <div className="mt-4">
-            <label className="block text-[17px] font-semibold mb-2 text-left">Tempel atau tulis teks di sini...</label>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -171,14 +157,11 @@ export default function Home() {
               placeholder="Tempel atau tulis teks di sini..."
               className="w-full border border-[#d8e8e3] rounded-2xl p-4 text-[17px] leading-relaxed outline-none focus:border-[#0f766e] bg-[#fbfdfc] resize-none"
             />
-            <div className="flex justify-between text-[13px] text-gray-500 mt-1.5">
-              <span>{text.length} / 8000 karakter</span>
-              {remaining <= 0 ? (
+            {remaining <= 0 && (
+              <div className="mt-2 text-right">
                 <a href="/pricing" className="text-[#0f766e] font-bold underline">Gratis habis — Lanjut ke Produk</a>
-              ) : (
-                <span>Sisa gratis: {remaining}x</span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {result && (
@@ -189,9 +172,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ BLOK ARTIKEL TERBARU - BLOK SENDIRI, DIPISAH ============ */}
+      {/* BLOK ARTIKEL TERBARU - BLOK SENDIRI, DIPISAH */}
       <section className="px-4 pt-10 pb-8">
-        {/* Heading rata kiri, sejajar sama foto artikel, ada garis di kanan, tidak nempel ke batas blok */}
         <div className="flex items-center gap-3 px-1 mb-5">
           <h2 className="text-[24px] font-serif font-bold whitespace-nowrap text-left">Artikel Terbaru</h2>
           <span className="flex-1 h-[1.5px] bg-[#1a2e2a]/20" />
@@ -202,11 +184,8 @@ export default function Home() {
             <article key={a.id} className="bg-white rounded-[24px] overflow-hidden shadow-[0_8px_28px_rgba(0,0,0,0.07)]">
               <img src={a.img} alt={a.title} className="w-full h-[190px] object-cover block" />
               <div className="p-5">
-                <span className="inline-block text-[12px] font-bold tracking-wide text-[#0f766e] bg-[#e6f3f0] px-3 py-1 rounded-full">{a.cat}</span>
-                <h3 className="text-[21px] leading-snug font-bold mt-2.5 text-left">{a.title}</h3>
+                <h3 className="text-[21px] leading-snug font-bold text-left">{a.title}</h3>
                 <p className="text-[16px] leading-relaxed text-gray-600 mt-1.5 text-left">{a.excerpt}</p>
-
-                {/* BARIS TANGGAL + WIDGET MEDSOS - 1 BARIS, DI DALAM KOLOM ARTIKEL */}
                 <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
                   <span className="text-[13px] text-gray-500">{a.read} • {a.date}</span>
                   <SocialWidget a={a} />
