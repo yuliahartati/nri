@@ -34,6 +34,8 @@ const BASIC_FIELDS = [
   "reasoning_risks",
 ];
 
+const MAX_INPUT = 8000;
+
 function cleanAnalysisText(value) {
   return String(value ?? "")
     .trim()
@@ -229,12 +231,28 @@ function renderBody(body) {
   return <div>{String(body ?? "")}</div>;
 }
 
+function getTierFromCode(code) {
+  const c = String(code || "").trim().toUpperCase();
+  if (c.startsWith("PRO-")) return "pro";
+  if (c.startsWith("BASIC-")) return "basic";
+  return "free";
+}
+
+function getVisibleFields(tier) {
+  if (tier === "pro") return Object.keys(FIELD_LABELS);
+  if (tier === "basic") return BASIC_FIELDS;
+  return FREE_FIELDS;
+}
+
 export default function Home() {
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [freeCount, setFreeCount] = useState(0);
   const [limit, setLimit] = useState(3);
+  const [activationCode, setActivationCode] = useState("");
+  const [tier, setTier] = useState("free");
+  const [codeMessage, setCodeMessage] = useState("");
 
   useEffect(() => {
     async function loadQuota() {
@@ -252,8 +270,24 @@ export default function Home() {
     loadQuota();
   }, []);
 
+  function handleActivate() {
+    const nextTier = getTierFromCode(activationCode);
+    setTier(nextTier);
+    if (nextTier === "pro") {
+      setCodeMessage("Kode Pro aktif. Semua 11 field kebuka.");
+    } else if (nextTier === "basic") {
+      setCodeMessage("Kode Basic aktif. 7 field kebuka.");
+    } else {
+      setCodeMessage("Kode tidak valid. Tetap di Free 5 field.");
+    }
+  }
+
   async function handleAnalyze() {
-    if (freeCount >= limit) {
+    if (text.length > MAX_INPUT) {
+      setResult({ error: `Teks terlalu panjang. Maksimal ${MAX_INPUT} karakter. Saat ini ${text.length} karakter.` });
+      return;
+    }
+    if (freeCount >= limit && tier === "free") {
       setResult({ error: "Free analysis limit reached.", limit: limit, remaining: 0 });
       return;
     }
@@ -300,19 +334,37 @@ export default function Home() {
           Analytical assistance for understanding claims, evidence, assumptions, framing, and missing context.
         </p>
 
+        <div style={{ background: "#15181d", border: "1px solid #292d34", borderRadius: "14px", padding: "14px", marginBottom: "16px" }}>
+          <p style={{ fontSize: "13px", fontWeight: "600", margin: "0 0 8px" }}>Punya kode aktivasi? {tier !== "free" ? `Paket aktif: ${tier.toUpperCase()}` : "Free 5 field"}</p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input
+              value={activationCode}
+              onChange={(e) => setActivationCode(e.target.value)}
+              placeholder="Contoh: PRO-XXXX / BASIC-XXXX"
+              style={{ flex: 1, background: "#0d0f12", color: "#f5f5f5", border: "1px solid #292d34", borderRadius: "10px", padding: "10px 12px", fontSize: "13px", outline: "none" }}
+            />
+            <button onClick={handleActivate} style={{ background: "#f5f5f5", color: "#0b0d10", border: "none", borderRadius: "10px", padding: "10px 14px", fontWeight: "700", fontSize: "13px", cursor: "pointer" }}>
+              Aktivasi
+            </button>
+          </div>
+          {codeMessage ? <p style={{ fontSize: "12px", opacity: 0.7, margin: "8px 0 0" }}>{codeMessage}</p> : null}
+          <p style={{ fontSize: "11px", opacity: 0.45, margin: "6px 0 0" }}>Beli di Pricing via WA, kamu dapat kode. Untuk tes: PRO-TEST123 / BASIC-TEST123</p>
+        </div>
+
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <span>Analyze a narrative</span>
-            <span style={styles.free}>{Math.max(0, limit - freeCount)} FREE</span>
+            <span style={styles.free}>{tier === "free" ? `${Math.max(0, limit - freeCount)} FREE` : `${tier.toUpperCase()} AKTIF`}</span>
           </div>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => setText(e.target.value.slice(0, MAX_INPUT))}
+            maxLength={MAX_INPUT}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
           <div style={styles.bottomRow}>
-            <span style={styles.counter}>{text.length} characters</span>
+            <span style={styles.counter}>{text.length} / {MAX_INPUT} characters {text.length >= MAX_INPUT ? "- Maksimal tercapai" : ""}</span>
             <button
               onClick={handleAnalyze}
               disabled={!text.trim() || loading}
@@ -338,9 +390,11 @@ export default function Home() {
                   if (!parsed) {
                     return <div style={styles.fallback}>{String(result.analysis)}</div>;
                   }
+                  const visible = getVisibleFields(tier);
                   const sections = Object.entries(FIELD_LABELS)
-                    .filter(([key]) => parsed[key] !== undefined && parsed[key] !== null)
+                    .filter(([key]) => visible.includes(key) && parsed[key] !== undefined && parsed[key] !== null)
                     .map(([key, title]) => ({ key, title, body: parsed[key] }));
+                  const lockedCount = Object.keys(FIELD_LABELS).length - sections.length;
                   if (sections.length === 0) {
                     return <div style={styles.fallback}>{JSON.stringify(parsed, null, 2)}</div>;
                   }
@@ -356,6 +410,14 @@ export default function Home() {
                           <div style={styles.body}>{renderBody(section.body)}</div>
                         </details>
                       ))}
+                      {lockedCount > 0 ? (
+                        <div style={{ borderTop: "1px solid #292d34", padding: "16px 4px 4px", textAlign: "center" }}>
+                          <p style={{ fontSize: "13px", opacity: 0.7 }}>{lockedCount} field masih dikunci di paket {tier.toUpperCase()}.</p>
+                          <a href="/pricing" style={{ display: "inline-block", background: "#f5f5f5", color: "#0b0d10", padding: "10px 16px", borderRadius: "10px", textDecoration: "none", fontWeight: "700", fontSize: "13px", marginTop: "8px" }}>
+                            Buka Semua Field - Lihat Paket
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })()}
@@ -381,7 +443,7 @@ export default function Home() {
           </div>
         )}
 
-<div style={{ marginTop: "48px", borderTop: "1px solid #292d34", paddingTop: "32px" }}>
+        <div style={{ marginTop: "48px", borderTop: "1px solid #292d34", paddingTop: "32px" }}>
           <h2 style={{ fontSize: "22px", marginBottom: "12px" }}>Kenapa NRI beda?</h2>
           <p style={{ fontSize: "14px", lineHeight: "1.7", opacity: 0.7 }}>
             NRI nggak kasih verdict benar atau salah. Dia nunjukin apa yang nggak kamu lihat: klaimnya apa, buktinya ada atau kosong, asumsinya apa, framing-nya gimana, dan konteks apa yang hilang.
