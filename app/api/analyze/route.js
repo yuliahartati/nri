@@ -608,10 +608,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body =
-      await request.json();
-
-    const text = body.text;
+        const text = body.text;
 
     if (
       !text ||
@@ -621,6 +618,15 @@ export async function POST(request) {
         {
           error:
             "Text is required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (text.length > 8000) {
+      return Response.json(
+        {
+          error: "Teks terlalu panjang. Maksimal 8000 karakter. Saat ini " + text.length + " karakter.",
         },
         { status: 400 }
       );
