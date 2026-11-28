@@ -469,7 +469,7 @@ export default function Home() {
 
         <div style={{ marginTop: "40px", textAlign: "center" }}>
           <h2 style={{ fontSize: "20px" }}>Habis 3x gratis?</h2>
-          <p style={{ fontSize: "14px", opacity: 0.7 }}>Basic 30x - Rp99.000 / Pro 100x - Rp149.000. Semua field kebuka di Pro.</p>
+          <p style={{ fontSize: "14px", opacity: 0.7 }}>Basic 30x - Rp49.000 / Pro 100x - Rp149.000. Semua field kebuka di Pro.</p>
           <a href="/pricing" style={{ display: "inline-block", background: "#f5f5f5", color: "#0b0d10", padding: "12px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: "700", fontSize: "14px", marginTop: "14px" }}>
             Lihat Semua Paket
           </a>
