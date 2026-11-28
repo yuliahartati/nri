@@ -231,13 +231,6 @@ function renderBody(body) {
   return <div>{String(body ?? "")}</div>;
 }
 
-function getTierFromCode(code) {
-  const c = String(code || "").trim().toUpperCase();
-  if (c.startsWith("PRO-")) return "pro";
-  if (c.startsWith("BASIC-")) return "basic";
-  return "free";
-}
-
 function getVisibleFields(tier) {
   if (tier === "pro") return Object.keys(FIELD_LABELS);
   if (tier === "basic") return BASIC_FIELDS;
@@ -270,16 +263,17 @@ export default function Home() {
     loadQuota();
   }, []);
 
-  function handleActivate() {
-    const nextTier = getTierFromCode(activationCode);
-    setTier(nextTier);
-    if (nextTier === "pro") {
-      setCodeMessage("Kode Pro aktif. Semua 11 field kebuka.");
-    } else if (nextTier === "basic") {
-      setCodeMessage("Kode Basic aktif. 7 field kebuka.");
-    } else {
-      setCodeMessage("Kode tidak valid. Tetap di Free 5 field.");
-    }
+  async function handleActivate() {
+    const c = activationCode.trim().toUpperCase();
+    if (!c) { setCodeMessage("Masukin kode dulu."); return; }
+    setCodeMessage("Cek kode...");
+    try {
+      const res = await fetch("/api/activate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: c }) });
+      const data = await res.json();
+      if (!data.success) { setCodeMessage(data.error || "Kode tidak valid."); return; }
+      setTier(data.tier);
+      setCodeMessage(data.tier === "pro" ? "Kode Pro aktif. Semua 11 field kebuka." : "Kode Basic aktif. 7 field kebuka.");
+    } catch { setCodeMessage("Gagal aktivasi. Coba lagi."); }
   }
 
   async function handleAnalyze() {
@@ -297,7 +291,7 @@ export default function Home() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, activationCode: activationCode.trim().toUpperCase() }),
       });
       const data = await response.json();
       setResult(data);
@@ -340,7 +334,7 @@ export default function Home() {
             <input
               value={activationCode}
               onChange={(e) => setActivationCode(e.target.value)}
-              placeholder="Contoh: PRO-XXXX / BASIC-XXXX"
+              placeholder="Contoh: PRO-XXXX-XXXX / BASIC-XXXX-XXXX"
               style={{ flex: 1, background: "#0d0f12", color: "#f5f5f5", border: "1px solid #292d34", borderRadius: "10px", padding: "10px 12px", fontSize: "13px", outline: "none" }}
             />
             <button onClick={handleActivate} style={{ background: "#f5f5f5", color: "#0b0d10", border: "none", borderRadius: "10px", padding: "10px 14px", fontWeight: "700", fontSize: "13px", cursor: "pointer" }}>
@@ -348,7 +342,7 @@ export default function Home() {
             </button>
           </div>
           {codeMessage ? <p style={{ fontSize: "12px", opacity: 0.7, margin: "8px 0 0" }}>{codeMessage}</p> : null}
-          <p style={{ fontSize: "11px", opacity: 0.45, margin: "6px 0 0" }}>Beli di Pricing via WA, kamu dapat kode. Untuk tes: PRO-TEST123 / BASIC-TEST123</p>
+          <p style={{ fontSize: "11px", opacity: 0.45, margin: "6px 0 0" }}>Beli di Pricing via WA, kamu dapat kode aktivasi 1x pakai.</p>
         </div>
 
         <div style={styles.card}>
@@ -358,13 +352,12 @@ export default function Home() {
           </div>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value.slice(0, MAX_INPUT))}
-            maxLength={MAX_INPUT}
+            onChange={(e) => setText(e.target.value)}
             placeholder="Paste a statement, news excerpt, caption, or argument here..."
             style={styles.textarea}
           />
           <div style={styles.bottomRow}>
-            <span style={styles.counter}>{text.length} / {MAX_INPUT} characters {text.length >= MAX_INPUT ? "- Maksimal tercapai" : ""}</span>
+            <span style={styles.counter}>{text.length} / {MAX_INPUT} characters {text.length > MAX_INPUT ? "- Terlalu panjang, tidak bisa dianalisa" : ""}</span>
             <button
               onClick={handleAnalyze}
               disabled={!text.trim() || loading}
@@ -429,7 +422,7 @@ export default function Home() {
                     <div style={styles.errorTitle}>Analysis unavailable</div>
                     <div style={styles.errorText}>{result.error}</div>
                     <a href="/pricing" style={{ display: "block", background: "#f5f5f5", color: "#0b0d10", padding: "12px", borderRadius: "10px", textAlign: "center", textDecoration: "none", fontWeight: "700", fontSize: "14px", marginTop: "16px" }}>
-                      Lihat Paket - Mulai Rp10.000
+                      Lihat Paket - Mulai Rp99.000
                     </a>
                     <p style={{ fontSize: "12px", opacity: 0.5, textAlign: "center", marginTop: "10px" }}>
                       Free 3x habis. Basic 30x / Pro 100x.
