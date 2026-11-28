@@ -103,12 +103,12 @@ export default function Home() {
     <main className="min-h-screen bg-[#f6f1e7] text-[#1a2e2a] font-sans">
       {/* HERO - 1 BLOK: HEADER + FOTO JADI SATU */}
       <section className="relative w-full overflow-hidden">
-        <img src="/hero-yulia.jpg" alt="Yulia Hartati" className="w-full h-[560px] object-cover object-[center_20%] block" />
+        <img src="/fuji.jpeg" alt="Yulia Hartati" className="w-full h-[560px] object-cover object-[center_20%] block" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20 pointer-events-none" />
 
         <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-5 z-20">
           <div className="flex items-center gap-2.5">
-            <img src="/nri-logo-transparent.png" alt="NRI" className="w-11 h-11 rounded-full object-cover bg-white/10" />
+            <img src="/logo.jpeg" alt="NRI" className="w-11 h-11 rounded-full object-cover bg-white/10" />
             <span className="text-white text-[11px] leading-[1.1] font-bold tracking-[0.14em] drop-shadow">
               NARRATIVE<br />REASONING<br />INTELLIGENCE
             </span>
