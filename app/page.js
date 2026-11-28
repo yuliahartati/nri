@@ -429,7 +429,7 @@ export default function Home() {
                     <div style={styles.errorTitle}>Analysis unavailable</div>
                     <div style={styles.errorText}>{result.error}</div>
                     <a href="/pricing" style={{ display: "block", background: "#f5f5f5", color: "#0b0d10", padding: "12px", borderRadius: "10px", textAlign: "center", textDecoration: "none", fontWeight: "700", fontSize: "14px", marginTop: "16px" }}>
-                      Lihat Paket - Mulai Rp99.000
+                      Lihat Paket - Mulai Rp10.000
                     </a>
                     <p style={{ fontSize: "12px", opacity: 0.5, textAlign: "center", marginTop: "10px" }}>
                       Free 3x habis. Basic 30x / Pro 100x.
